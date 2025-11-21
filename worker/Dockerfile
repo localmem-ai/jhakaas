@@ -1,10 +1,14 @@
 # Use NVIDIA PyTorch base image for GPU support
 FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
 
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
 WORKDIR /app
 
 # Install system dependencies (required for OpenCV/InsightFace)
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y \
     build-essential \
     g++ \
     libgl1-mesa-glx \
