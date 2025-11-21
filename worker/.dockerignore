@@ -1,0 +1,29 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Tests
+test_*.py
+*_test.py
+
+# Documentation
+*.md
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Cloud Build
+cloudbuild.yaml
+
+# Deployment
+service.yaml
+download_models.py
+
+# OS
+.DS_Store

@@ -1,0 +1,42 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Tests
+test_*.py
+*_test.py
+tests/
+
+# Documentation
+*.md
+docs/
+
+# Infra
+infra/
+
+# Terraform
+*.tf
+*.tfstate
+*.tfvars
+
+# Misc
+.DS_Store
+*.log

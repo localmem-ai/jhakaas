@@ -1,0 +1,31 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: jhakaas-worker
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/startup-cpu-boost: 'true'
+        run.googleapis.com/gpu-zonal-redundancy: 'false'
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '1'
+    spec:
+      serviceAccountName: jhakaas-worker-sa@jhakaas-dev.iam.gserviceaccount.com
+      containerConcurrency: 1
+      timeoutSeconds: 300
+      containers:
+      - image: asia-southeast1-docker.pkg.dev/jhakaas-dev/jhakaas-repo/worker:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MODEL_BUCKET
+          value: jhakaas-models-jhakaas-dev
+        resources:
+          limits:
+            cpu: '4'
+            memory: 16Gi
+            nvidia.com/gpu: '1'
+      nodeSelector:
+        run.googleapis.com/accelerator: nvidia-l4

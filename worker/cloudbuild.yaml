@@ -1,0 +1,23 @@
+steps:
+  # 1. Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest',
+      '.'
+    ]
+
+  # 2. Push the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'push',
+      '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest'
+    ]
+
+# Substitutions allow us to pass variables at build time
+substitutions:
+  _REGION: asia-southeast1
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8' # Use a bigger machine for faster builds
