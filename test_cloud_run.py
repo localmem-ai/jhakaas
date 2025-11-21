@@ -6,12 +6,85 @@ Performs health check and full end-to-end image generation test
 import requests
 import time
 import sys
+import os
+from PIL import Image
+from io import BytesIO
 
 # Cloud Run URL (will be set after deployment)
 WORKER_URL = None  # Set this to your Cloud Run URL
 
-# Test image URL (public image for testing)
-TEST_IMAGE_URL = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
+# Test scenarios with different prompts and images
+TEST_SCENARIOS = [
+    {
+        "name": "Professional Headshot",
+        "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+        "prompt": "professional headshot, studio lighting, sharp focus, cinematic",
+        "style": "cinematic"
+    },
+    {
+        "name": "Portrait Enhancement",
+        "image_url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
+        "prompt": "beautiful portrait, natural lighting, high quality, professional photography",
+        "style": "natural"
+    },
+    {
+        "name": "Business Professional",
+        "image_url": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+        "prompt": "corporate headshot, professional attire, office background, high resolution",
+        "style": "corporate"
+    }
+]
+
+# Output directory for results
+OUTPUT_DIR = "test_results"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+def download_image(url):
+    """Download image from URL and return PIL Image"""
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return Image.open(BytesIO(response.content))
+    except Exception as e:
+        print(f"Error downloading image: {e}")
+        return None
+
+def create_comparison(original_img, generated_img, scenario_name, output_path):
+    """Create side-by-side comparison of original and generated images"""
+    try:
+        # Resize images to same height for comparison
+        height = 400
+        original_aspect = original_img.width / original_img.height
+        generated_aspect = generated_img.width / generated_img.height
+
+        original_resized = original_img.resize(
+            (int(height * original_aspect), height),
+            Image.Resampling.LANCZOS
+        )
+        generated_resized = generated_img.resize(
+            (int(height * generated_aspect), height),
+            Image.Resampling.LANCZOS
+        )
+
+        # Create comparison image
+        total_width = original_resized.width + generated_resized.width + 20
+        comparison = Image.new('RGB', (total_width, height + 60), 'white')
+
+        # Paste images
+        comparison.paste(original_resized, (10, 40))
+        comparison.paste(generated_resized, (original_resized.width + 20, 40))
+
+        # Save comparison
+        comparison.save(output_path)
+        print(f"   Comparison saved to: {output_path}")
+
+        # Open in default viewer
+        os.system(f'open "{output_path}"')
+
+        return True
+    except Exception as e:
+        print(f"Error creating comparison: {e}")
+        return False
 
 def test_health():
     """Test 1: Health Check - Verify service is up and GPU is available"""
@@ -62,23 +135,31 @@ def test_health():
         print(f"❌ Health check failed: {e}")
         return False
 
-def test_generate():
-    """Test 2: Full Generation - Test AI image processing"""
+def test_generate_scenario(scenario, scenario_num, total_scenarios):
+    """Test image generation for a specific scenario"""
     print("\n" + "="*60)
-    print("TEST 2: IMAGE GENERATION")
+    print(f"TEST {scenario_num}/{total_scenarios}: {scenario['name'].upper()}")
     print("="*60)
 
     try:
+        # Download original image first
+        print(f"\n📥 Downloading original image...")
+        original_img = download_image(scenario['image_url'])
+        if not original_img:
+            print("❌ Failed to download original image")
+            return False
+
+        # Prepare payload
         payload = {
-            "image_url": TEST_IMAGE_URL,
-            "prompt": "professional headshot, studio lighting, cinematic",
-            "style": "cinematic"
+            "image_url": scenario['image_url'],
+            "prompt": scenario['prompt'],
+            "style": scenario['style']
         }
 
         print(f"\nCalling: {WORKER_URL}/generate")
-        print(f"Image URL: {TEST_IMAGE_URL}")
-        print(f"Prompt: {payload['prompt']}")
-        print(f"Style: {payload['style']}")
+        print(f"Image URL: {scenario['image_url']}")
+        print(f"Prompt: {scenario['prompt']}")
+        print(f"Style: {scenario['style']}")
         print("\n⏳ Processing (this may take 30-60 seconds)...")
 
         start_time = time.time()
@@ -101,7 +182,22 @@ def test_generate():
 
             if data.get("status") == "success":
                 print("\n✅ Image generation successful!")
-                print(f"✅ Output saved to: {data.get('output_url')}")
+
+                # Download generated image
+                print(f"\n📥 Downloading generated image...")
+                generated_img = download_image(data.get('output_url'))
+
+                if generated_img:
+                    # Create comparison
+                    output_filename = f"{scenario['name'].lower().replace(' ', '_')}_comparison.jpg"
+                    output_path = os.path.join(OUTPUT_DIR, output_filename)
+
+                    print(f"\n🖼️  Creating side-by-side comparison...")
+                    if create_comparison(original_img, generated_img, scenario['name'], output_path):
+                        print(f"✅ Comparison created and opened!")
+                    else:
+                        print(f"⚠️  Could not create comparison")
+
                 return True
             elif data.get("mock_mode"):
                 print("\n⚠️  Service is in mock mode (models not loaded)")
@@ -120,6 +216,34 @@ def test_generate():
     except Exception as e:
         print(f"❌ Generation test failed: {e}")
         return False
+
+def test_generate():
+    """Test 2: Full Generation - Test all scenarios"""
+    print("\n" + "="*60)
+    print(f"IMAGE GENERATION TESTS - {len(TEST_SCENARIOS)} SCENARIOS")
+    print("="*60)
+
+    results = []
+    for i, scenario in enumerate(TEST_SCENARIOS, 1):
+        success = test_generate_scenario(scenario, i, len(TEST_SCENARIOS))
+        results.append({
+            "name": scenario["name"],
+            "success": success
+        })
+        if i < len(TEST_SCENARIOS):
+            print("\n⏸️  Pausing 2 seconds before next test...")
+            time.sleep(2)
+
+    # Print summary
+    print("\n" + "="*60)
+    print("GENERATION TEST SUMMARY")
+    print("="*60)
+    for result in results:
+        status = "✅ PASS" if result["success"] else "❌ FAIL"
+        print(f"{result['name']}: {status}")
+
+    all_passed = all(r["success"] for r in results)
+    return all_passed
 
 def main():
     """Run both tests"""
@@ -151,6 +275,8 @@ def main():
 
     if health_passed and generation_passed:
         print("\n🎉 All tests passed! Worker is fully functional.")
+        print(f"\n📁 Results saved in: {OUTPUT_DIR}/")
+        print("   Check the comparison images to see before/after results!")
         sys.exit(0)
     elif health_passed:
         print("\n⚠️  Health check passed but generation failed.")

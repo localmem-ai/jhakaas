@@ -4,7 +4,7 @@ FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
 WORKDIR /app
 
 # Install system dependencies (required for OpenCV/InsightFace)
-RUN apt-get update && apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     build-essential \
     g++ \
     libgl1-mesa-glx \
