@@ -4,22 +4,14 @@ steps:
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest',
-      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:${SHORT_SHA}',
       '.'
     ]
 
-  # 2. Push the container image (latest tag)
+  # 2. Push the container image
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'push',
       '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest'
-    ]
-
-  # 3. Push the container image (SHA tag)
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'push',
-      '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:${SHORT_SHA}'
     ]
 
 # Substitutions allow us to pass variables at build time
