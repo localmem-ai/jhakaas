@@ -13,6 +13,7 @@ import numpy as np
 from PIL import Image
 from insightface.app import FaceAnalysis
 from google.cloud import storage
+from src.pipelines import StableDiffusionXLInstantIDPipeline
 
 class ModelManager:
     def __init__(self, bucket_name):
@@ -126,15 +127,14 @@ class ModelManager:
                 torch_dtype=torch.float16
             )
 
-        # Load InstantID Pipeline (community pipeline)
-        self.pipe = DiffusionPipeline.from_pretrained(
+        # Load InstantID Pipeline (local bundled version - diffusers 0.27.2 compatible)
+        self.pipe = StableDiffusionXLInstantIDPipeline.from_pretrained(
             base_model_path,
             controlnet=controlnet,
             vae=vae,
             torch_dtype=torch.float16,
             use_safetensors=True,
-            variant="fp16",
-            custom_pipeline="pipeline_stable_diffusion_xl_instantid"
+            variant="fp16"
         ).to(self.device)
 
         # Load IP-Adapter
