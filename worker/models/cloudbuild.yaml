@@ -17,8 +17,9 @@ steps:
     id: 'download-models'
     waitFor: ['install-deps']
 
-timeout: 3600s  # 1 hour timeout (models are large)
+timeout: 7200s  # 2 hour timeout (SDXL + other models are large)
 
 options:
-  machineType: 'N1_HIGHCPU_8'  # Faster machine for quicker downloads
+  machineType: 'E2_HIGHCPU_32'  # GPU best practice: use powerful build machine
+  diskSizeGb: 500  # GPU best practice: large disk for SDXL models
   logging: CLOUD_LOGGING_ONLY

@@ -84,6 +84,65 @@ def download_antelopev2():
         print(f"❌ Failed to download AntelopeV2: {e}")
         return False
 
+def download_sdxl_base():
+    """Download SDXL base model"""
+    print("\n" + "="*60)
+    print("📥 Downloading SDXL Base Model")
+    print("="*60)
+
+    try:
+        print("📥 Downloading stabilityai/stable-diffusion-xl-base-1.0...")
+        local_dir = snapshot_download(
+            repo_id="stabilityai/stable-diffusion-xl-base-1.0",
+            cache_dir="./cache",
+            allow_patterns=["*.json", "*.safetensors", "*.txt", "*.model"],  # Download FP16 variant
+        )
+
+        # Upload all files to GCS
+        for root, dirs, files in os.walk(local_dir):
+            for file in files:
+                if file.startswith('.'):  # Skip hidden files
+                    continue
+                file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(file_path, local_dir)
+                gcs_path = f"sdxl-base/{relative_path}"
+                upload_to_gcs(file_path, gcs_path)
+
+        print("✓ SDXL base model downloaded")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to download SDXL base: {e}")
+        return False
+
+def download_vae_fp16():
+    """Download VAE FP16 fix"""
+    print("\n" + "="*60)
+    print("📥 Downloading VAE FP16 Fix")
+    print("="*60)
+
+    try:
+        print("📥 Downloading madebyollin/sdxl-vae-fp16-fix...")
+        local_dir = snapshot_download(
+            repo_id="madebyollin/sdxl-vae-fp16-fix",
+            cache_dir="./cache"
+        )
+
+        # Upload all files to GCS
+        for root, dirs, files in os.walk(local_dir):
+            for file in files:
+                if file.startswith('.'):  # Skip hidden files
+                    continue
+                file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(file_path, local_dir)
+                gcs_path = f"vae-fp16/{relative_path}"
+                upload_to_gcs(file_path, gcs_path)
+
+        print("✓ VAE FP16 fix downloaded")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to download VAE: {e}")
+        return False
+
 def download_style_loras():
     """Download community style LoRAs"""
     print("\n" + "="*60)
@@ -129,6 +188,14 @@ def main():
     success = True
 
     # Download all model components
+    if not download_sdxl_base():
+        success = False
+        print("\n❌ Failed to download SDXL base model")
+
+    if not download_vae_fp16():
+        success = False
+        print("\n❌ Failed to download VAE FP16 fix")
+
     if not download_instantid():
         success = False
         print("\n❌ Failed to download InstantID models")

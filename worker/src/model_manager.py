@@ -100,14 +100,31 @@ class ModelManager:
 
         # 3. Load SDXL Base Model with InstantID
         print("\n3️⃣ Loading SDXL InstantID Pipeline...")
-        base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
+
+        # Check for SDXL in GCS first (GPU best practice: pre-download models)
+        sdxl_gcs_path = os.path.join(gcs_models_path, 'sdxl-base') if os.path.exists(gcs_models_path) else None
+        if sdxl_gcs_path and os.path.exists(sdxl_gcs_path):
+            print(f"Loading SDXL from GCS: {sdxl_gcs_path}")
+            base_model_path = sdxl_gcs_path
+        else:
+            print("Loading SDXL from HuggingFace (first run only)...")
+            base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
 
         # Load VAE FP16 fix to prevent numerical instabilities
         print("Loading VAE with FP16 fix...")
-        vae = AutoencoderKL.from_pretrained(
-            "madebyollin/sdxl-vae-fp16-fix",
-            torch_dtype=torch.float16
-        )
+        vae_gcs_path = os.path.join(gcs_models_path, 'vae-fp16') if os.path.exists(gcs_models_path) else None
+        if vae_gcs_path and os.path.exists(vae_gcs_path):
+            print(f"Loading VAE from GCS: {vae_gcs_path}")
+            vae = AutoencoderKL.from_pretrained(
+                vae_gcs_path,
+                torch_dtype=torch.float16
+            )
+        else:
+            print("Loading VAE from HuggingFace (first run only)...")
+            vae = AutoencoderKL.from_pretrained(
+                "madebyollin/sdxl-vae-fp16-fix",
+                torch_dtype=torch.float16
+            )
 
         # Load InstantID Pipeline (community pipeline)
         self.pipe = DiffusionPipeline.from_pretrained(
