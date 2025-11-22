@@ -1,35 +1,67 @@
 # Worker Tests
 
-Test suite for validating AI worker functionality and deployment.
+Clean test plugin system for Cloud Run worker style transfer.
 
-## Test Files
+## Structure
 
-- **test_worker.py** - Unit tests for worker endpoints and model manager
-- **test_cloud_run.py** - Integration tests for deployed Cloud Run service
-- **test_styles.py** - Comprehensive style transfer testing with HTML report generation
-
-## Utilities
-
-- **utils/generate_html_report.py** - Creates visual comparison reports for style transfer results
-
-## Running Tests
-
-### Unit Tests
-```bash
-pytest worker/tests/test_worker.py
+```
+tests/
+├── config.py              # Test configuration
+├── test_styles.py         # Main test script
+├── test-images/           # Place test images here
+├── results/               # Test outputs (gitignored)
+│   ├── html/             # HTML reports
+│   └── images/           # Generated images
+└── utils/
+    └── generate_html_report.py  # Report generator
 ```
 
-### Cloud Run Integration Tests
-```bash
-python worker/tests/test_cloud_run.py
-```
+## Quick Start
 
-### Style Transfer Tests
-```bash
-python worker/tests/test_styles.py
-```
-This generates an HTML report in `results_html/` with visual comparisons of all style transfers.
+1. **Add test images** to `test-images/` folder:
+   ```bash
+   cp ~/my-portrait.jpg worker/tests/test-images/
+   ```
 
-## Test Images
+2. **Run tests:**
+   ```bash
+   cd worker/tests
+   python test_styles.py
+   ```
 
-Test images should be placed in the project root or specified via command line arguments.
+3. **View results** in `results/html/test_report_*.html`
+
+## How It Works
+
+1. Reads all images from `test-images/` (.jpg, .jpeg, .png)
+2. Uploads them to GCS temporary bucket
+3. Calls Cloud Run worker API for each style
+4. Downloads generated images to `results/images/`
+5. Creates HTML comparison report in `results/html/`
+
+## Configuration
+
+Edit [config.py](config.py) to customize:
+- `WORKER_URL` - Cloud Run worker URL
+- `TEST_BUCKET` - GCS bucket for uploading test images
+- `STYLES` - List of styles to test
+- Output directories
+
+## Requirements
+
+- Python 3.8+ with `requests` and `Pillow`
+- GCloud CLI authenticated (`gcloud auth login`)
+- Access to Cloud Run worker service
+- GCS bucket for temporary test image uploads
+
+## Supported Styles
+
+- Natural (minimal changes)
+- Anime
+- Cartoon
+- Bollywood
+- Cinematic
+- Vintage
+- Glamour
+
+Configure in [config.py](config.py)
