@@ -3,6 +3,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
+      '-f', 'deployment/Dockerfile',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest',
       '.'
     ]

@@ -8,10 +8,8 @@ FROM asia-southeast1-docker.pkg.dev/jhakaas-dev/jhakaas-repo/worker-base:latest
 WORKDIR /app
 
 # Copy only application code (fast!)
-COPY main.py .
-COPY model_manager.py .
-COPY utils.py .
+COPY ../src ./src
 
 EXPOSE 8080
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]

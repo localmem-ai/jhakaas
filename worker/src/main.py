@@ -2,8 +2,8 @@ import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import torch
-from model_manager import ModelManager
-import utils
+from src.model_manager import ModelManager
+from src import utils
 
 app = FastAPI(title="Jhakaas AI Worker")
 
