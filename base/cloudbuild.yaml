@@ -35,7 +35,8 @@ steps:
 substitutions:
   _REGION: asia-southeast1
 
+timeout: 1800s  # 30 minutes total timeout
+
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: 'E2_HIGHCPU_8'  # Use a bigger machine for faster builds
-  timeout: 1800s  # 30 minutes total timeout
