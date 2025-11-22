@@ -4,7 +4,6 @@ steps:
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker-base:latest',
-      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker-base:${SHORT_SHA}',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker-base:v1.0.0',
       '.'
     ]
@@ -17,14 +16,7 @@ steps:
       '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker-base:latest'
     ]
 
-  # 3. Push the base image with commit SHA tag
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'push',
-      '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker-base:${SHORT_SHA}'
-    ]
-
-  # 4. Push the base image with version tag
+  # 3. Push the base image with version tag
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'push',
