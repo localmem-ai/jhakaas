@@ -78,14 +78,18 @@ module "worker_service" {
   region         = var.region
   image          = var.worker_image
   service_account = google_service_account.worker_sa.email
-  
+
+  # Network Config (Dev: allow direct access with IAM)
+  ingress        = "INGRESS_TRAFFIC_ALL"
+
   # GPU Config (L4)
   cpu            = "4"        # 4 vCPU required for GPU
   memory         = "16Gi"     # 16GB RAM
   gpu_count      = "1"
   launch_stage   = "BETA"
-  min_instances  = 0  # Required for GPU without zonal redundancy quota
+  min_instances  = 1  # Keep 1 instance warm to avoid cold starts (model download ~2min)
   max_instances  = 1  # Single instance to avoid zonal redundancy
+  timeout_seconds = 600  # 10 minutes for AI model generation
   
   # Annotations
   additional_annotations = {
@@ -118,6 +122,20 @@ resource "google_project_iam_member" "compute_logs" {
   project = var.project_id
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+}
+
+# Grant Cloud Build permission to deploy to Cloud Run
+resource "google_project_iam_member" "compute_run_developer" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+}
+
+# Grant Cloud Build permission to act as the worker service account
+resource "google_service_account_iam_member" "compute_act_as_worker" {
+  service_account_id = google_service_account.worker_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 }
 
 # Get project number for service accounts

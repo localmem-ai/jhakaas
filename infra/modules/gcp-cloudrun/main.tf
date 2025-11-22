@@ -20,10 +20,11 @@ resource "google_cloud_run_v2_service" "service" {
   project      = var.project_id
   launch_stage = var.launch_stage
 
-  # Only allow traffic from Cloud Load Balancers (not public internet)
-  # This prevents direct access to Cloud Run URL
-  # Traffic must go through: Cloudflare → External LB → Cloud Run
-  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  # Ingress controls where traffic can come from
+  # INGRESS_TRAFFIC_ALL: Direct internet access (dev)
+  # INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER: Only via load balancers (prod)
+  # INGRESS_TRAFFIC_INTERNAL_ONLY: Only from VPC networks (most restrictive)
+  ingress = var.ingress
 
   template {
     service_account = var.service_account

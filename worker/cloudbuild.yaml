@@ -14,6 +14,18 @@ steps:
       '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest'
     ]
 
+  # 3. Deploy to Cloud Run
+  # Note: Ingress setting is managed by Terraform, not here
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - jhakaas-worker
+      - --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest
+      - --region=${_REGION}
+      - --platform=managed
+
 # Substitutions allow us to pass variables at build time
 substitutions:
   _REGION: asia-southeast1

@@ -7,11 +7,21 @@ import requests
 import time
 import sys
 import os
+import subprocess
 from PIL import Image
 from io import BytesIO
 
 # Cloud Run URL (will be set after deployment)
-WORKER_URL = None  # Set this to your Cloud Run URL
+WORKER_URL = "https://jhakaas-worker-1098174162480.asia-southeast1.run.app"
+
+def get_auth_token():
+    """Get identity token for authentication"""
+    result = subprocess.run(
+        ['/opt/homebrew/share/google-cloud-sdk/bin/gcloud', 'auth', 'print-identity-token'],
+        capture_output=True,
+        text=True
+    )
+    return result.stdout.strip()
 
 # Test scenarios with different prompts and images
 TEST_SCENARIOS = [
@@ -98,7 +108,8 @@ def test_health():
 
     try:
         print(f"Calling: {WORKER_URL}/health")
-        response = requests.get(f"{WORKER_URL}/health", timeout=30)
+        headers = {"Authorization": f"Bearer {get_auth_token()}"}
+        response = requests.get(f"{WORKER_URL}/health", headers=headers, timeout=30)
 
         print(f"\nStatus Code: {response.status_code}")
 
@@ -163,9 +174,11 @@ def test_generate_scenario(scenario, scenario_num, total_scenarios):
         print("\n⏳ Processing (this may take 30-60 seconds)...")
 
         start_time = time.time()
+        headers = {"Authorization": f"Bearer {get_auth_token()}"}
         response = requests.post(
             f"{WORKER_URL}/generate",
             json=payload,
+            headers=headers,
             timeout=120  # 2 minute timeout for AI processing
         )
         elapsed = time.time() - start_time

@@ -110,3 +110,9 @@ variable "gcs_volumes" {
   default     = []
   description = "List of GCS buckets to mount as volumes"
 }
+
+variable "ingress" {
+  type        = string
+  default     = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  description = "Ingress settings: INGRESS_TRAFFIC_ALL, INGRESS_TRAFFIC_INTERNAL_ONLY, INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+}
