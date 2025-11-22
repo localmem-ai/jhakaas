@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - MODEL_BUCKET=local
+      - IMAGES_BUCKET=local-images
+    volumes:
+      - ./local_data:/app/data
+    command: uvicorn main:app --host 0.0.0.0 --port 8080 --reload

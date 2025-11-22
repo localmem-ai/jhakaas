@@ -33,6 +33,8 @@ Thumbs.db
 # Test files
 test/
 test-*
+results_html/
+style_test_results/
 
 # Secrets
 *.pem

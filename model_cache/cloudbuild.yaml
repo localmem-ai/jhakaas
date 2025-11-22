@@ -1,0 +1,24 @@
+steps:
+  # Install Python dependencies
+  - name: 'python:3.11'
+    entrypoint: 'pip'
+    args:
+      - 'install'
+      - '--user'
+      - 'huggingface_hub'
+      - 'google-cloud-storage'
+    id: 'install-deps'
+
+  # Download models and upload to GCS
+  - name: 'python:3.11'
+    entrypoint: 'python'
+    args:
+      - 'download_models.py'
+    id: 'download-models'
+    waitFor: ['install-deps']
+
+timeout: 3600s  # 1 hour timeout (models are large)
+
+options:
+  machineType: 'N1_HIGHCPU_8'  # Faster machine for quicker downloads
+  logging: CLOUD_LOGGING_ONLY
