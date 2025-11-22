@@ -1,10 +1,10 @@
 import os
 import torch
-from diffusers import StableDiffusionXLPipeline, AutoencoderKL
+from diffusers import StableDiffusionXLImg2ImgPipeline, AutoencoderKL
 from diffusers.utils import load_image
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from insightface.app import FaceAnalysis
 
 class ModelManager:
@@ -57,8 +57,8 @@ class ModelManager:
             torch_dtype=torch.float16
         )
 
-        # Load SDXL pipeline
-        self.pipe = StableDiffusionXLPipeline.from_pretrained(
+        # Load SDXL Img2Img pipeline for face-preserving style transfer
+        self.pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
             base_model_path,
             vae=vae,
             torch_dtype=torch.float16,
@@ -97,23 +97,50 @@ class ModelManager:
         if not self.pipe:
             raise RuntimeError("Models not loaded")
 
-        # For now, do simple text-to-image generation
-        # Full InstantID implementation will be added later
+        # Load and prepare the original image
+        print(f"Loading original image from: {face_image_path}")
+        init_image = load_image(face_image_path)
 
-        # Add style to prompt
-        full_prompt = f"{prompt}, {style} style, high quality, detailed"
+        # Resize to SDXL resolution
+        init_image = init_image.resize((1024, 1024), Image.LANCZOS)
+
+        # Build style-aware prompt
+        # Different styles require different prompting strategies
+        style_prompts = {
+            "anime": "anime art style, vibrant colors, cel shading, manga style",
+            "cartoon": "cartoon style, bold outlines, flat colors, animated look",
+            "bollywood": "Bollywood movie style, dramatic, vibrant, cinematic Indian film aesthetic",
+            "cinematic": "cinematic style, professional photography, dramatic lighting",
+            "natural": "natural style, realistic, photographic",
+            "corporate": "corporate style, professional business headshot",
+            "artistic": "artistic style, painterly, creative",
+            "vintage": "vintage photography style, classic, timeless",
+            "glamour": "glamour photography, elegant, sophisticated"
+        }
+
+        # Get style prompt or use the style as-is
+        style_prompt = style_prompts.get(style.lower(), f"{style} style")
+
+        # Combine user prompt with style
+        full_prompt = f"{prompt}, {style_prompt}, high quality, detailed"
+
+        # Negative prompt to maintain face quality and avoid artifacts
+        negative_prompt = "distorted face, blurry, low quality, disfigured, ugly, bad anatomy, extra limbs, worst quality"
 
         print(f"Generating image with prompt: {full_prompt}")
+        print(f"Style strength: 0.45 (preserves original face while applying style)")
 
-        # Generate image with 2025 best practices:
-        # - Reduced steps (20 vs 30) for 30% speed improvement with minimal quality loss
-        # - Optimal guidance scale for SDXL
+        # Generate with img2img
+        # Strength 0.45: Good balance between face preservation and style application
+        # - Lower (0.2-0.3): Very similar to original, subtle style
+        # - Higher (0.6-0.8): More dramatic style, less face preservation
         image = self.pipe(
             prompt=full_prompt,
+            negative_prompt=negative_prompt,
+            image=init_image,
+            strength=0.45,  # Sweet spot for face preservation + style
             num_inference_steps=20,
-            guidance_scale=7.5,
-            height=1024,
-            width=1024
+            guidance_scale=7.5
         ).images[0]
 
         return image
