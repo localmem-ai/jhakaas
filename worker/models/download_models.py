@@ -85,17 +85,18 @@ def download_antelopev2():
         return False
 
 def download_sdxl_base():
-    """Download SDXL base model"""
+    """Download SDXL base model (complete directory structure)"""
     print("\n" + "="*60)
     print("📥 Downloading SDXL Base Model")
     print("="*60)
 
     try:
         print("📥 Downloading stabilityai/stable-diffusion-xl-base-1.0...")
+        # Download complete model (no filters - we need all config files)
         local_dir = snapshot_download(
             repo_id="stabilityai/stable-diffusion-xl-base-1.0",
             cache_dir="./cache",
-            allow_patterns=["*.json", "*.safetensors", "*.txt", "*.model"],  # Download FP16 variant
+            ignore_patterns=["*.ckpt", "*.bin"]  # Only skip old checkpoint formats
         )
 
         # Upload all files to GCS
