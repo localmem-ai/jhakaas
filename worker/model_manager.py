@@ -1,4 +1,5 @@
 import os
+import shutil
 import torch
 from diffusers import (
     DiffusionPipeline,
@@ -9,7 +10,7 @@ from diffusers.utils import load_image
 from diffusers.models import ControlNetModel
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image
 from insightface.app import FaceAnalysis
 from google.cloud import storage
 
@@ -20,6 +21,7 @@ class ModelManager:
         self.pipe = None
         self.app = None
         self.style_loras = {}  # Cache for loaded style LoRAs
+        self.current_lora = None  # Track currently active LoRA
 
         # Use /tmp for HuggingFace cache (models download ~12GB on first run)
         # In production, consider pre-downloading to GCS or baking into image
@@ -58,7 +60,6 @@ class ModelManager:
 
             if os.path.exists(antelopev2_gcs) and not os.path.exists(antelopev2_tmp):
                 print(f"Copying AntelopeV2 from GCS to /tmp...")
-                import shutil
                 os.makedirs(os.path.dirname(antelopev2_tmp), exist_ok=True)
                 shutil.copytree(antelopev2_gcs, antelopev2_tmp)
                 print("✓ Copied from GCS")
@@ -172,10 +173,19 @@ class ModelManager:
             print(f"No LoRA available for style: {style}")
             return False
 
-        # Check if already loaded
-        if style_lower in self.style_loras:
-            print(f"✓ Style LoRA already loaded: {style}")
+        # Check if this LoRA is already active
+        if self.current_lora == style_lower:
+            print(f"✓ Style LoRA already active: {style}")
             return True
+
+        # Unload previous LoRA if different style
+        if self.current_lora is not None:
+            print(f"Unloading previous LoRA: {self.current_lora}")
+            try:
+                self.pipe.unload_lora_weights()
+                self.current_lora = None
+            except Exception as e:
+                print(f"⚠️  Failed to unload LoRA: {e}")
 
         try:
             repo_id = style_lora_map[style_lower]
@@ -190,6 +200,7 @@ class ModelManager:
                     print(f"Loading LoRA from GCS: {lora_path}")
                     self.pipe.load_lora_weights(lora_path)
                     self.style_loras[style_lower] = lora_path
+                    self.current_lora = style_lower
                     print(f"✓ {style} LoRA loaded from GCS")
                     return True
 
@@ -197,11 +208,13 @@ class ModelManager:
             print(f"Loading LoRA from HuggingFace: {repo_id}")
             self.pipe.load_lora_weights(repo_id)
             self.style_loras[style_lower] = repo_id
+            self.current_lora = style_lower
             print(f"✓ {style} LoRA loaded from HuggingFace")
             return True
 
         except Exception as e:
             print(f"⚠️  Failed to load {style} LoRA: {e}")
+            self.current_lora = None
             return False
 
     def process_image(self, face_image_path, prompt, style):
@@ -296,8 +309,3 @@ class ModelManager:
 
         print("✅ Image generated successfully!")
         return image
-
-def draw_kps(image_pil, kps, color_list=[(255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255)]):
-    # Helper to draw keypoints for ControlNet
-    # Simplified for brevity
-    return image_pil
