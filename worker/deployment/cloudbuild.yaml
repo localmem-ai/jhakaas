@@ -7,13 +7,17 @@ steps:
       - |
         docker pull ${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest || exit 0
 
-  # 2. Build the container image with caching
+  # 2. Build with Artifact Registry inline cache (BuildKit)
+  # Inline cache stores cache metadata IN the image for better reuse
   - name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'DOCKER_BUILDKIT=1'
     args: [
       'build',
       '-f', 'worker/deployment/Dockerfile',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest',
       '--cache-from', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest',
+      '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
       'worker'
     ]
 
