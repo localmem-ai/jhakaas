@@ -60,6 +60,11 @@ async def generate_image(request: GenerateRequest):
         }
         
     except Exception as e:
+        # Log full traceback for debugging
+        import traceback
+        print(f"❌ Error generating image:")
+        print(traceback.format_exc())
+
         # Cleanup on error
         if 'input_path' in locals():
             utils.cleanup_file(input_path)
