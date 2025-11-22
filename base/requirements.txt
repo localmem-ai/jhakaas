@@ -20,3 +20,4 @@ opencv-python-headless==4.9.0.80
 insightface==0.7.3
 onnxruntime-gpu==1.16.3
 peft==0.7.1
+xformers==0.0.23  # Memory-efficient attention for InstantID
