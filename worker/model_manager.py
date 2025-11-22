@@ -47,16 +47,27 @@ class ModelManager:
         # 1. Load Face Analysis (InsightFace AntelopeV2)
         print("\n1️⃣ Loading Face Analysis Model (AntelopeV2)...")
         try:
-            # Try to load from GCS first
-            antelopev2_path = os.path.join(gcs_models_path, 'antelopev2') if os.path.exists(gcs_models_path) else None
+            # InsightFace needs writable directory for cache
+            # Use /tmp since GCS mount is read-only
+            insightface_root = '/tmp/insightface'
+            os.makedirs(insightface_root, exist_ok=True)
 
-            if antelopev2_path and os.path.exists(antelopev2_path):
-                print(f"Loading AntelopeV2 from GCS: {antelopev2_path}")
-                self.app = FaceAnalysis(name='antelopev2', root=gcs_models_path, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+            # Check if we can copy from GCS to avoid download
+            antelopev2_gcs = os.path.join(gcs_models_path, 'antelopev2')
+            antelopev2_tmp = os.path.join(insightface_root, 'models', 'antelopev2')
+
+            if os.path.exists(antelopev2_gcs) and not os.path.exists(antelopev2_tmp):
+                print(f"Copying AntelopeV2 from GCS to /tmp...")
+                import shutil
+                os.makedirs(os.path.dirname(antelopev2_tmp), exist_ok=True)
+                shutil.copytree(antelopev2_gcs, antelopev2_tmp)
+                print("✓ Copied from GCS")
+            elif os.path.exists(antelopev2_tmp):
+                print("✓ Using cached AntelopeV2 from /tmp")
             else:
-                print("Loading AntelopeV2 from HuggingFace...")
-                self.app = FaceAnalysis(name='antelopev2', root='./', providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+                print("Downloading AntelopeV2 to /tmp (first run only)...")
 
+            self.app = FaceAnalysis(name='antelopev2', root=insightface_root, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
             self.app.prepare(ctx_id=0, det_size=(640, 640))
             print("✓ Face analysis model loaded")
         except Exception as e:
