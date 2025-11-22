@@ -1,31 +1,16 @@
-# Use NVIDIA PyTorch base image for GPU support
-FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
+# Optimized Dockerfile using base image
+# Build time: ~30 seconds (vs 10 minutes before base image approach)
+# Base image contains all AI dependencies (PyTorch, diffusers, transformers, etc.)
+# This Dockerfile only copies application code for fast builds
 
-# Prevent interactive prompts during package installation
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Etc/UTC
+FROM asia-southeast1-docker.pkg.dev/jhakaas-dev/jhakaas-repo/worker-base:latest
 
 WORKDIR /app
 
-# Install system dependencies (required for OpenCV/InsightFace)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    g++ \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# Copy only application code (fast!)
+COPY main.py .
+COPY model_manager.py .
 
-# Copy requirements first to cache pip install
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Expose port
 EXPOSE 8080
 
-# Run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
