@@ -79,14 +79,16 @@ class ModelManager:
         except Exception as e:
             print(f"xFormers not available (using PyTorch SDPA): {e}")
 
-        # 2025 Optimization: Compile UNet for faster inference (PyTorch 2.0+)
-        try:
-            import torch._dynamo as dynamo
-            dynamo.config.suppress_errors = True
-            self.pipe.unet = torch.compile(self.pipe.unet, mode="reduce-overhead", fullgraph=True)
-            print("✓ UNet compiled with torch.compile")
-        except Exception as e:
-            print(f"torch.compile not available: {e}")
+        # 2025 Optimization: torch.compile for UNet (DISABLED - too slow on first run)
+        # First compilation takes 3-5 minutes, subsequent runs are faster
+        # Enable this once we have persistent model caching
+        # try:
+        #     import torch._dynamo as dynamo
+        #     dynamo.config.suppress_errors = True
+        #     self.pipe.unet = torch.compile(self.pipe.unet, mode="reduce-overhead", fullgraph=True)
+        #     print("✓ UNet compiled with torch.compile")
+        # except Exception as e:
+        #     print(f"torch.compile not available: {e}")
 
         print("✓ SDXL pipeline loaded with optimizations")
         print("Models loaded successfully!")
