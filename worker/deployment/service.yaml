@@ -27,5 +27,12 @@ spec:
             cpu: '4'
             memory: 16Gi
             nvidia.com/gpu: '1'
+        startupProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 0
+          timeoutSeconds: 240
+          periodSeconds: 240
+          failureThreshold: 3
       nodeSelector:
         run.googleapis.com/accelerator: nvidia-l4

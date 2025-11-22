@@ -318,10 +318,10 @@ class ModelManager:
             negative_prompt=negative_prompt,
             image_embeds=face_emb,  # Face identity embedding
             image=face_image,  # Reference face image for ControlNet
-            controlnet_conditioning_scale=0.8,  # Face structure preservation
+            controlnet_conditioning_scale=float(0.8),  # Face structure preservation
             num_inference_steps=15,  # Optimal: 12-18
-            guidance_scale=5.0,  # Optimal: 4-5 (lower than standard SDXL)
-            cross_attention_kwargs={"scale": lora_scale} if lora_loaded else None,
+            guidance_scale=float(5.0),  # Optimal: 4-5 (lower than standard SDXL)
+            cross_attention_kwargs={"scale": float(lora_scale)} if lora_loaded else None,
         ).images[0]
 
         print("✅ Image generated successfully!")
