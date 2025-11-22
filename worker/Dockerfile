@@ -10,6 +10,7 @@ WORKDIR /app
 # Copy only application code (fast!)
 COPY main.py .
 COPY model_manager.py .
+COPY utils.py .
 
 EXPOSE 8080
 
