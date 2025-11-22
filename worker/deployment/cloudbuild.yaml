@@ -3,9 +3,9 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
-      '-f', 'deployment/Dockerfile',
+      '-f', 'worker/deployment/Dockerfile',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest',
-      '.'
+      'worker'
     ]
 
   # 2. Push the container image

@@ -8,7 +8,7 @@ FROM asia-southeast1-docker.pkg.dev/jhakaas-dev/jhakaas-repo/worker-base:latest
 WORKDIR /app
 
 # Copy only application code (fast!)
-COPY ../src ./src
+COPY src ./src
 
 EXPOSE 8080
 
