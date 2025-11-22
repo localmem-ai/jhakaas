@@ -1,21 +1,30 @@
 steps:
-  # 1. Build the container image
+  # 1. Pull previous image for layer caching
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull ${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest || exit 0
+
+  # 2. Build the container image with caching
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-f', 'worker/deployment/Dockerfile',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest',
+      '--cache-from', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest',
       'worker'
     ]
 
-  # 2. Push the container image
+  # 3. Push the container image
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'push',
       '${_REGION}-docker.pkg.dev/${PROJECT_ID}/jhakaas-repo/worker:latest'
     ]
 
-  # 3. Deploy to Cloud Run
+  # 4. Deploy to Cloud Run
   # Note: Ingress setting is managed by Terraform, not here
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
