@@ -1,7 +1,7 @@
 import os
 import torch
 from diffusers import (
-    StableDiffusionXLInstantIDPipeline,
+    DiffusionPipeline,
     AutoencoderKL,
     EulerDiscreteScheduler
 )
@@ -97,14 +97,15 @@ class ModelManager:
             torch_dtype=torch.float16
         )
 
-        # Load InstantID Pipeline
-        self.pipe = StableDiffusionXLInstantIDPipeline.from_pretrained(
+        # Load InstantID Pipeline (community pipeline)
+        self.pipe = DiffusionPipeline.from_pretrained(
             base_model_path,
             controlnet=controlnet,
             vae=vae,
             torch_dtype=torch.float16,
             use_safetensors=True,
-            variant="fp16"
+            variant="fp16",
+            custom_pipeline="pipeline_stable_diffusion_xl_instantid"
         ).to(self.device)
 
         # Load IP-Adapter
