@@ -538,6 +538,49 @@ class StableDiffusionXLInstantIDPipeline(StableDiffusionXLControlNetPipeline):
         prompt_image_emb = self.image_proj_model(prompt_image_emb)
         return prompt_image_emb
 
+    def check_inputs(
+        self,
+        prompt,
+        prompt_2,
+        image,
+        callback_steps,
+        negative_prompt=None,
+        negative_prompt_2=None,
+        prompt_embeds=None,
+        negative_prompt_embeds=None,
+        pooled_prompt_embeds=None,
+        negative_pooled_prompt_embeds=None,
+        controlnet_conditioning_scale=1.0,
+        control_guidance_start=0.0,
+        control_guidance_end=1.0,
+        callback_on_step_end_tensor_inputs=None,
+    ):
+        # Override base class check_inputs to fix controlnet_conditioning_scale type validation
+        # Convert to float if needed instead of strict type checking
+        if controlnet_conditioning_scale is not None:
+            if isinstance(controlnet_conditioning_scale, (int, float)):
+                controlnet_conditioning_scale = float(controlnet_conditioning_scale)
+            elif isinstance(controlnet_conditioning_scale, list):
+                controlnet_conditioning_scale = [float(x) for x in controlnet_conditioning_scale]
+
+        # Call parent's check_inputs with converted value
+        return super().check_inputs(
+            prompt,
+            prompt_2,
+            image,
+            callback_steps,
+            negative_prompt,
+            negative_prompt_2,
+            prompt_embeds,
+            negative_prompt_embeds,
+            pooled_prompt_embeds,
+            negative_pooled_prompt_embeds,
+            controlnet_conditioning_scale,
+            control_guidance_start,
+            control_guidance_end,
+            callback_on_step_end_tensor_inputs,
+        )
+
     @torch.no_grad()
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(

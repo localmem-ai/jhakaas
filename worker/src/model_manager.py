@@ -313,17 +313,17 @@ class ModelManager:
         print(f"   • ControlNet scale: 0.8")
         print(f"   • LoRA scale: {lora_scale}")
 
-        # TEMPORARY: Omit controlnet_conditioning_scale to bypass type error
-        # Default value is 1.0 - may need to adjust later for optimal face preservation
+        # Generate with optimal settings
         guidance = 5.0
         steps = 15
+        conditioning_scale = 0.8  # Face structure preservation
 
         image = self.pipe(
             prompt=full_prompt,
             negative_prompt=negative_prompt,
             image_embeds=face_emb,  # Face identity embedding
             image=face_image,  # Reference face image for ControlNet
-            # controlnet_conditioning_scale=0.8,  # TEMP DISABLED - using default 1.0
+            controlnet_conditioning_scale=conditioning_scale,  # Face structure preservation
             num_inference_steps=steps,  # Optimal: 12-18
             guidance_scale=guidance,  # Optimal: 4-5 (lower than standard SDXL)
             cross_attention_kwargs={"scale": float(lora_scale)} if lora_loaded else None,
