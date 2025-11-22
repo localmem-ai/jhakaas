@@ -310,7 +310,7 @@ def create_html_report(results, original_img):
 <body>
     <div class="container">
         <h1>🎨 Jhakaas Style Transfer Test</h1>
-        <div class="subtitle">Face-Preserving Style Transfer with SDXL Img2Img</div>
+        <div class="subtitle">Face-Preserving Style Transfer with InstantID + LoRAs</div>
 
         <div class="summary">
             <h2>Test Summary</h2>
@@ -355,11 +355,13 @@ def create_html_report(results, original_img):
         <div style="margin-top: 40px; padding: 20px; background: #f7fafc; border-radius: 10px;">
             <h3>Implementation Details</h3>
             <ul>
-                <li><strong>Model:</strong> Stable Diffusion XL with Img2Img pipeline</li>
-                <li><strong>Strength:</strong> 0.45 (preserves face while applying style)</li>
+                <li><strong>Model:</strong> SDXL InstantID Pipeline with ControlNet + IP-Adapter</li>
+                <li><strong>Face Encoding:</strong> InsightFace AntelopeV2 (512-dim embeddings)</li>
+                <li><strong>Style Method:</strong> LoRA sliders (anime, cartoon, pixar) + prompt-based</li>
+                <li><strong>Settings:</strong> CFG 5.0, 15 steps, ControlNet scale 0.8, LoRA scale 0.8</li>
                 <li><strong>Resolution:</strong> 1024×1024</li>
                 <li><strong>GPU:</strong> NVIDIA L4 on Google Cloud Run</li>
-                <li><strong>Optimizations:</strong> VAE FP16, Attention Slicing, xFormers</li>
+                <li><strong>Optimizations:</strong> VAE FP16, Attention Slicing, xFormers, Euler Scheduler</li>
             </ul>
         </div>
     </div>

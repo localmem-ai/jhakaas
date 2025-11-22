@@ -8,9 +8,10 @@ google-cloud-storage
 torch==2.1.2 --index-url https://download.pytorch.org/whl/cu121
 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu121
 huggingface_hub==0.19.4
-diffusers==0.25.0
-transformers==4.36.2
-accelerate==0.26.1
+diffusers==0.30.0
+transformers==4.44.0
+accelerate==0.34.0
+controlnet-aux==0.0.9
 safetensors==0.4.1
 opencv-python-headless==4.9.0.80
 insightface==0.7.3
