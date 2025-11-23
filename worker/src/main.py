@@ -79,13 +79,17 @@ class GenerateRequest(BaseModel):
         "natural", "anime", "cartoon", "bollywood", "cinematic",
         "vintage", "glamour", "corporate", "artistic", "pixar",
         # New viral effects (LoRA-based)
-        "clay", "ps2", "pixel", "aesthetic",
+        "ps2", "pixel", "aesthetic",
         # New viral effects (prompt-only)
         "yearbook", "kpop", "bollywood_poster", "y2k",
         "couple_aesthetic", "mermaid", "sigma", "thug_life"
     ] = Field(
         default="cinematic",
         description="Style to apply to the image"
+    )
+    engine: Literal["instantid", "ip_adapter"] = Field(
+        default="instantid",
+        description="Face ID Engine to use: 'instantid' (Research) or 'ip_adapter' (Commercial Safe)"
     )
     
     @validator('image_url')
@@ -377,11 +381,16 @@ async def generate_image(request: GenerateRequest):
     logger.info(
         "generation_started",
         style=request.style,
+        engine=request.engine,
         prompt_length=len(request.prompt),
         request_id=req_id
     )
     
     # Check if models are loaded
+    # Note: manager.pipe might be None if we are switching engines, so we check inside process_image logic or here
+    # But readiness check relies on manager.pipe. 
+    # For dual engine, we might need to relax this or ensure at least one is loaded.
+    # For now, let's assume load_models() loads the default engine.
     if not manager.pipe:
         logger.error("generation_failed", reason="models_not_loaded")
         raise HTTPException(
@@ -407,7 +416,8 @@ async def generate_image(request: GenerateRequest):
                     manager.process_image,
                     input_path,
                     request.prompt,
-                    request.style
+                    request.style,
+                    request.engine
                 ),
                 timeout=settings.processing_timeout_seconds
             )
@@ -439,7 +449,8 @@ async def generate_image(request: GenerateRequest):
             "generation_completed",
             total_time_ms=total_time,
             processing_time_ms=processing_time,
-            style=request.style
+            style=request.style,
+            engine=request.engine
         )
         
         return GenerateResponse(

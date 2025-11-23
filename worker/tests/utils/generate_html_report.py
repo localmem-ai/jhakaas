@@ -225,30 +225,39 @@ def create_comparison_html(all_results, output_file):
         <table>
             <tr>
                 <th>Style</th>
-                <th>Status</th>
-                <th>Time (s)</th>
-                <th>Preview</th>
+                <th>InstantID (Research)</th>
+                <th>IP-Adapter (Commercial Safe)</th>
             </tr>
 """
         for result in results:
-            if result.get('success'):
-                status_class = "success"
-                status_text = "✅ SUCCESS"
-                time_text = f"{result['time']:.1f}s"
-                img_html = f'<img src="../images/{os.path.basename(result["image_path"])}" width="150">'
-            else:
-                status_class = "failed"
-                status_text = "❌ FAILED"
-                time_text = "-"
-                error = result.get('error', 'Unknown error')
-                img_html = f'<span style="color: red;">{error}</span>'
+            style_name = result['style']['name']
+            
+            # Helper to generate cell HTML
+            def get_cell_html(engine_data):
+                if not engine_data:
+                    return "<td>-</td>"
+                
+                if engine_data.get('success'):
+                    img_path = f"../images/{os.path.basename(engine_data['image_path'])}"
+                    return f"""
+                        <td style="text-align: center;">
+                            <img src="{img_path}" width="200"><br>
+                            <span class="success">✅ {engine_data['time']:.1f}s</span>
+                        </td>
+                    """
+                else:
+                    error = engine_data.get('error', 'Unknown error')
+                    return f'<td class="failed">❌ Failed<br><small>{error}</small></td>'
+
+            # Get data for both engines
+            instantid_data = result['engines'].get('instantid')
+            ip_adapter_data = result['engines'].get('ip_adapter')
 
             html_content += f"""
             <tr>
-                <td>{result['style']['name']}</td>
-                <td class="{status_class}">{status_text}</td>
-                <td>{time_text}</td>
-                <td>{img_html}</td>
+                <td><strong>{style_name}</strong></td>
+                {get_cell_html(instantid_data)}
+                {get_cell_html(ip_adapter_data)}
             </tr>
 """
 

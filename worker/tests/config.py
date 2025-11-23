@@ -79,12 +79,6 @@ STYLES = [
     # NEW VIRAL EFFECTS (LoRA-based)
     # ============================================================================
     {
-        "name": "Clay/Claymation",
-        "style": "clay",
-        "prompt": "portrait",
-        "description": "Wallace & Gromit style claymation"
-    },
-    {
         "name": "PS2 Graphics",
         "style": "ps2",
         "prompt": "game character",
@@ -162,12 +156,10 @@ QUICK_TEST_STYLES = [
     "anime",
     "yearbook",  # NEW: Easy to test, no LoRA
     "kpop",      # NEW: Easy to test, no LoRA
-    "clay",      # NEW: LoRA-based
 ]
 
 # Viral effects only (for focused testing)
 VIRAL_EFFECTS_ONLY = [
-    "clay",
     "ps2",
     "pixel",
     "aesthetic",

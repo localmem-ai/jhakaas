@@ -25,7 +25,6 @@ Downloaded from Hugging Face:
 - **Pixar**: ntc-ai/SDXL-LoRA-slider.pixar-style
 
 **Viral Effects (College Edition):**
-- **Clay**: alvdansen/clay-style-lora (Claymation/Wallace & Gromit style)
 - **PS2**: artificialguybr/ps1redmond-ps1-game-graphics-lora-for-sdxl (PS2 game graphics)
 - **Pixel**: nerijs/pixel-art-xl (Pixel art style)
 - **Aesthetic**: ntc-ai/SDXL-LoRA-slider.aesthetic (Instagram/TikTok trending)

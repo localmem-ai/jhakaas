@@ -51,12 +51,13 @@ class WorkerAPIClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def generate(self, image_url, prompt, style):
+    def generate(self, image_url, prompt, style, engine="instantid"):
         """Generate styled image"""
         payload = {
             "image_url": image_url,
             "prompt": prompt,
-            "style": style
+            "style": style,
+            "engine": engine
         }
 
         headers = {"Authorization": f"Bearer {self._get_auth_token()}"}
@@ -99,7 +100,7 @@ def download_image(url):
 
 
 def test_image_with_styles(image_path, client):
-    """Test single image with all styles"""
+    """Test single image with all styles on both engines"""
     image_name = Path(image_path).stem
     print(f"\n{'='*70}")
     print(f"Testing: {image_name}")
@@ -110,41 +111,52 @@ def test_image_with_styles(image_path, client):
     image_url = upload_to_gcs(image_path)
 
     results = []
+    engines = ["instantid", "ip_adapter"]
+    
     for idx, style_config in enumerate(config.STYLES, 1):
         print(f"\n[{idx}/{len(config.STYLES)}] Testing {style_config['name']}...")
+        
+        style_result = {
+            "style": style_config,
+            "engines": {}
+        }
 
-        try:
-            start_time = time.time()
-            result = client.generate(
-                image_url=image_url,
-                prompt=style_config['prompt'],
-                style=style_config['style']
-            )
-            elapsed = time.time() - start_time
+        for engine in engines:
+            print(f"   ⚙️  Engine: {engine}...", end="", flush=True)
+            try:
+                start_time = time.time()
+                result = client.generate(
+                    image_url=image_url,
+                    prompt=style_config['prompt'],
+                    style=style_config['style'],
+                    engine=engine
+                )
+                elapsed = time.time() - start_time
 
-            if result.get("status") == "success":
-                generated_img = download_image(result['output_url'])
+                if result.get("status") == "success":
+                    generated_img = download_image(result['output_url'])
 
-                # Save result
-                output_filename = f"{image_name}_{style_config['style']}.jpg"
-                output_path = os.path.join(config.IMAGES_DIR, output_filename)
-                generated_img.save(output_path, quality=95)
+                    # Save result
+                    output_filename = f"{image_name}_{style_config['style']}_{engine}.jpg"
+                    output_path = os.path.join(config.IMAGES_DIR, output_filename)
+                    generated_img.save(output_path, quality=95)
 
-                print(f"   ✅ Success ({elapsed:.1f}s)")
+                    print(f" ✅ ({elapsed:.1f}s)")
 
-                results.append({
-                    "style": style_config,
-                    "image_path": output_path,
-                    "time": elapsed,
-                    "success": True
-                })
-            else:
-                print(f"   ❌ Failed: {result}")
-                results.append({"style": style_config, "success": False})
+                    style_result["engines"][engine] = {
+                        "image_path": output_path,
+                        "time": elapsed,
+                        "success": True
+                    }
+                else:
+                    print(f" ❌ Failed: {result}")
+                    style_result["engines"][engine] = {"success": False, "error": str(result)}
 
-        except Exception as e:
-            print(f"   ❌ Error: {e}")
-            results.append({"style": style_config, "success": False, "error": str(e)})
+            except Exception as e:
+                print(f" ❌ Error: {e}")
+                style_result["engines"][engine] = {"success": False, "error": str(e)}
+        
+        results.append(style_result)
 
     return results
 

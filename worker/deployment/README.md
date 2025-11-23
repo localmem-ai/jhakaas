@@ -45,7 +45,6 @@ Existing styles:
 - anime, cartoon, pixar
 
 New viral effects (College Edition):
-- **clay** - Claymation/Wallace & Gromit style
 - **ps2** - PS2 game graphics retro style
 - **pixel** - 16-bit pixel art
 - **aesthetic** - Instagram/TikTok aesthetic

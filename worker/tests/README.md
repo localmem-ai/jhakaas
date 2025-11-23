@@ -125,8 +125,8 @@ python quick_test.py yearbook "professional portrait"
 # Quick test K-Pop effect
 python quick_test.py kpop "portrait"
 
-# Quick test clay effect (needs LoRA)
-python quick_test.py clay "portrait"
+# Quick test PS2 graphics effect (needs LoRA)
+python quick_test.py ps2 "game character"
 ```
 
 Configure in [config.py](config.py)

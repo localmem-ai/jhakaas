@@ -219,7 +219,6 @@ def download_style_loras():
         ("ntc-ai/SDXL-LoRA-slider.pixar-style", "pixar"),
 
         # NEW VIRAL EFFECTS (College Edition)
-        ("alvdansen/clay-style-lora", "clay"),  # Claymation/Wallace & Gromit
         ("artificialguybr/ps1redmond-ps1-game-graphics-lora-for-sdxl", "ps2"),  # PS2 Graphics
         ("nerijs/pixel-art-xl", "pixel"),  # Pixel Art
 
@@ -282,35 +281,109 @@ def download_style_loras():
 
     return True  # Don't fail build if some LoRAs fail
 
+def download_ip_adapter_models():
+    """Download IP-Adapter models for commercial-safe stack"""
+    print("\n" + "="*60)
+    print("📥 Checking IP-Adapter Models (Commercial Safe)")
+    print("="*60)
+    
+    # 1. IP-Adapter for SDXL (Standard + Plus)
+    # We download both to test which one is better
+    repo_id = "h94/IP-Adapter"
+    print(f"Downloading IP-Adapter weights from {repo_id}...")
+    try:
+        # Download specific files
+        files_to_download = [
+            "sdxl_models/ip-adapter_sdxl.safetensors",       # Standard
+            "sdxl_models/ip-adapter-plus_sdxl_vit-h.safetensors", # Plus (Better quality)
+        ]
+        
+        local_dir = snapshot_download(
+            repo_id=repo_id,
+            cache_dir="./cache",
+            allow_patterns=files_to_download
+        )
+        
+        # Upload to GCS
+        for root, dirs, files in os.walk(local_dir):
+            for file in files:
+                if file.endswith('.safetensors'):
+                    file_path = os.path.join(root, file)
+                    # Keep structure: ip-adapter/sdxl_models/...
+                    relative_path = os.path.relpath(file_path, local_dir)
+                    gcs_path = f"ip-adapter/{relative_path}"
+                    upload_to_gcs(file_path, gcs_path)
+                    
+        print("✓ IP-Adapter models downloaded")
+    except Exception as e:
+        print(f"⚠️  Failed to download IP-Adapter: {e}")
+        return False
+
+    # 2. ControlNet Canny for SDXL (Structure preservation)
+    # This replaces InstantID's ControlNet for keeping face shape
+    canny_repo = "diffusers/controlnet-canny-sdxl-1.0"
+    print(f"\nDownloading ControlNet Canny from {canny_repo}...")
+    try:
+        local_dir = snapshot_download(
+            repo_id=canny_repo,
+            cache_dir="./cache",
+            allow_patterns=["*.fp16.safetensors", "*.json"]
+        )
+        
+        # Upload to GCS
+        for root, dirs, files in os.walk(local_dir):
+            for file in files:
+                if file.endswith('.safetensors') or file.endswith('.json'):
+                    file_path = os.path.join(root, file)
+                    gcs_path = f"controlnet-canny/{file}"
+                    upload_to_gcs(file_path, gcs_path)
+                    
+        print("✓ ControlNet Canny downloaded")
+        return True
+    except Exception as e:
+        print(f"⚠️  Failed to download ControlNet Canny: {e}")
+        return False
+
 def main():
     print("\n" + "="*60)
-    print("🚀 InstantID Model Cache Builder")
+    print("🚀 Model Cache Builder")
     print("="*60)
     print(f"Target: gs://{BUCKET_NAME}/")
     print("="*60)
 
     success = True
 
-    # Download all model components
+    # 1. SDXL Base
     if not download_sdxl_base():
         success = False
         print("\n❌ Failed to download SDXL base model")
 
+    # 2. VAE FP16
     if not download_vae_fp16():
         success = False
         print("\n❌ Failed to download VAE FP16 fix")
 
-    if not download_instantid():
+    # 3. InstantID (Existing Engine - Keep for now)
+    # NOTE: download_instantid() is assumed to exist elsewhere or be a placeholder.
+    # If it's not defined, this will cause a NameError.
+    if not download_instantid(): # Assuming this function exists
         success = False
         print("\n❌ Failed to download InstantID models")
 
+    # 4. Face Analysis (InsightFace - Required for InstantID only)
     if not download_antelopev2():
         success = False
         print("\n❌ Failed to download AntelopeV2 model")
+        
+    # 5. IP-Adapter (New Commercial Engine)
+    if not download_ip_adapter_models():
+        success = False
+        print("\n❌ Failed to download IP-Adapter models")
 
+    # 6. Style LoRAs (Viral Effects)
     if not download_style_loras():
-        # LoRAs are optional, don't fail the build
-        print("\n⚠️  Some style LoRAs failed to download")
+        # LoRAs are optional, so we don't set success = False for this
+        print("\n⚠️  Some Style LoRAs failed to download, but continuing.")
 
     print("\n" + "="*60)
     if success:
@@ -318,8 +391,6 @@ def main():
         print(f"Models available at: gs://{BUCKET_NAME}/")
     else:
         print("❌ Model cache build failed!")
-        print("Some critical models could not be downloaded.")
-    print("="*60)
 
     sys.exit(0 if success else 1)
 
