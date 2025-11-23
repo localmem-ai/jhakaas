@@ -807,8 +807,13 @@ class StableDiffusionXLInstantIDPipeline(StableDiffusionXLControlNetPipeline):
 
         device = self._execution_device
 
-        if isinstance(controlnet, MultiControlNetModel) and isinstance(controlnet_conditioning_scale, float):
-            controlnet_conditioning_scale = [controlnet_conditioning_scale] * len(controlnet.nets)
+        # Convert scalar controlnet_conditioning_scale to list for MultiControlNetModel
+        # Use duck typing instead of strict isinstance check to support numpy types (np.float64, np.float32) and int
+        if isinstance(controlnet, MultiControlNetModel) and not isinstance(controlnet_conditioning_scale, list):
+            controlnet_conditioning_scale = [float(controlnet_conditioning_scale)] * len(controlnet.nets)
+        elif not isinstance(controlnet_conditioning_scale, list):
+            # Normalize single value to native Python float to avoid numpy type issues
+            controlnet_conditioning_scale = float(controlnet_conditioning_scale)
 
         global_pool_conditions = (
             controlnet.config.global_pool_conditions
