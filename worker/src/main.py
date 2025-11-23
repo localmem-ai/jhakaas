@@ -75,8 +75,14 @@ class GenerateRequest(BaseModel):
         example="professional headshot, studio lighting"
     )
     style: Literal[
+        # Existing styles
         "natural", "anime", "cartoon", "bollywood", "cinematic",
-        "vintage", "glamour", "corporate", "artistic", "pixar"
+        "vintage", "glamour", "corporate", "artistic", "pixar",
+        # New viral effects (LoRA-based)
+        "clay", "ps2", "pixel", "aesthetic",
+        # New viral effects (prompt-only)
+        "yearbook", "kpop", "bollywood_poster", "y2k",
+        "couple_aesthetic", "mermaid", "sigma", "thug_life"
     ] = Field(
         default="cinematic",
         description="Style to apply to the image"
