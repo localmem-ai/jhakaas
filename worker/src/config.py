@@ -10,7 +10,8 @@ Configuration can be loaded from:
 
 import os
 from typing import Literal
-from pydantic import BaseSettings, Field, validator
+from pydantic_settings import BaseSettings
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -181,14 +182,16 @@ class Settings(BaseSettings):
         description="Enable attention slicing for memory efficiency"
     )
     
-    @validator('environment')
+    @field_validator('environment')
+    @classmethod
     def validate_environment(cls, v):
         """Validate environment value."""
         if v not in ["dev", "staging", "prod"]:
             raise ValueError(f"Invalid environment: {v}")
         return v
-    
-    @validator('cache_dir', 'insightface_root')
+
+    @field_validator('cache_dir', 'insightface_root')
+    @classmethod
     def validate_paths(cls, v):
         """Ensure paths are absolute."""
         if not os.path.isabs(v):
@@ -204,14 +207,13 @@ class Settings(BaseSettings):
     def use_json_logging(self) -> bool:
         """Use JSON logging in production."""
         return self.environment in ["staging", "prod"]
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
-        
-        # Allow environment variables to override
-        env_prefix = ""
+
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+        "env_prefix": "",
+    }
 
 
 # Global settings instance
