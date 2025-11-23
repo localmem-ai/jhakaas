@@ -34,6 +34,13 @@ RUN python -c "import torch; print(f'PyTorch {torch.__version__} installed')" &&
 ENV HF_HOME=/tmp/hf_cache
 ENV TRANSFORMERS_CACHE=/tmp/hf_cache
 
+# Create non-root user for security
+# Use nobody user (UID 65534) which is standard across systems
+RUN groupadd -g 65534 appuser || true && \
+    useradd -r -u 65534 -g 65534 appuser 2>/dev/null || true && \
+    mkdir -p /tmp/hf_cache /tmp/insightface && \
+    chown -R 65534:65534 /tmp /app
+
 # Label for tracking
 LABEL maintainer="jhakaas-dev"
 LABEL description="Base image with AI dependencies for Jhakaas worker"

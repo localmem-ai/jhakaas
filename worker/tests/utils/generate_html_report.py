@@ -5,6 +5,7 @@ Generate HTML report from test results
 import subprocess
 import os
 import shutil
+from datetime import datetime
 
 # Test results data from the test run
 RESULTS_DATA = [
@@ -190,6 +191,93 @@ def main():
         return 1
 
     return 0
+
+def create_comparison_html(all_results, output_file):
+    """Create a simple HTML comparison report from test results"""
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jhakaas Worker Test Results - {datetime.now().strftime('%Y-%m-%d %H:%M')}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
+        h1 {{ color: #333; }}
+        .test-group {{ background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        .style-test {{ display: inline-block; margin: 10px; text-align: center; vertical-align: top; }}
+        .style-test img {{ max-width: 200px; border: 2px solid #ddd; border-radius: 4px; }}
+        .success {{ color: green; }}
+        .failed {{ color: red; }}
+        table {{ border-collapse: collapse; width: 100%; margin-top: 10px; }}
+        td, th {{ padding: 8px; text-align: left; border: 1px solid #ddd; }}
+        th {{ background: #f0f0f0; }}
+    </style>
+</head>
+<body>
+    <h1>Jhakaas Worker - Style Transfer Test Results</h1>
+    <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+"""
+
+    for image_name, results in all_results.items():
+        html_content += f"""
+    <div class="test-group">
+        <h2>Test Image: {image_name}</h2>
+        <table>
+            <tr>
+                <th>Style</th>
+                <th>Status</th>
+                <th>Time (s)</th>
+                <th>Preview</th>
+            </tr>
+"""
+        for result in results:
+            if result.get('success'):
+                status_class = "success"
+                status_text = "✅ SUCCESS"
+                time_text = f"{result['time']:.1f}s"
+                img_html = f'<img src="../images/{os.path.basename(result["image_path"])}" width="150">'
+            else:
+                status_class = "failed"
+                status_text = "❌ FAILED"
+                time_text = "-"
+                error = result.get('error', 'Unknown error')
+                img_html = f'<span style="color: red;">{error}</span>'
+
+            html_content += f"""
+            <tr>
+                <td>{result['style']['name']}</td>
+                <td class="{status_class}">{status_text}</td>
+                <td>{time_text}</td>
+                <td>{img_html}</td>
+            </tr>
+"""
+
+        html_content += """
+        </table>
+    </div>
+"""
+
+    # Summary
+    total_tests = sum(len(results) for results in all_results.values())
+    successful_tests = sum(1 for results in all_results.values() for r in results if r.get('success'))
+
+    html_content += f"""
+    <div class="test-group">
+        <h2>Summary</h2>
+        <p>Total tests: {total_tests}</p>
+        <p class="success">Successful: {successful_tests}</p>
+        <p class="failed">Failed: {total_tests - successful_tests}</p>
+    </div>
+</body>
+</html>
+"""
+
+    with open(output_file, 'w') as f:
+        f.write(html_content)
+
+    print(f"HTML report created: {output_file}")
+    return output_file
+
 
 if __name__ == "__main__":
     exit(main())

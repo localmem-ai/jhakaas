@@ -1,29 +1,92 @@
-# Python cache
+# .dockerignore for worker directory
+# Excludes unnecessary files from Docker build context
+# This speeds up the build by reducing context size
+
+# Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
 
-# Tests
-test_*.py
-*_test.py
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
 
-# Documentation
-*.md
-
-# Git
-.git/
-.gitignore
+# Testing
+tests/
+test-*
+*.test
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
 
 # IDE
 .vscode/
 .idea/
-
-# Cloud Build
-cloudbuild.yaml
-
-# Deployment
-service.yaml
-download_models.py
-
-# OS
+*.swp
+*.swo
+*~
 .DS_Store
+
+# Documentation
+docs/
+*.md
+README*
+LICENSE
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD (don't need in container)
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Deployment files (don't need in container)
+deployment/
+*.yaml
+*.yml
+Dockerfile*
+.dockerignore
+
+# Models (should be mounted from GCS, not copied)
+models/
+*.pth
+*.bin
+*.safetensors
+*.onnx
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Results and outputs
+results/
+output/
+generated/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Environment files
+.env
+.env.*
+*.pem
+*.key
+credentials.json

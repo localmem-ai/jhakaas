@@ -38,6 +38,22 @@ Set in Cloud Run service configuration:
 - `ENABLE_TORCH_COMPILE` - Enable/disable torch compilation
 - Production settings configured via Terraform
 
+## Supported Features
+
+### Style LoRAs (Model-based)
+Existing styles:
+- anime, cartoon, pixar
+
+New viral effects (College Edition):
+- **clay** - Claymation/Wallace & Gromit style
+- **ps2** - PS2 game graphics retro style
+- **pixel** - 16-bit pixel art
+- **aesthetic** - Instagram/TikTok aesthetic
+
+### Prompt-only Styles
+No LoRA needed, prompt engineering only:
+- yearbook, kpop, bollywood_poster, y2k, couple_aesthetic, mermaid, sigma, thug_life
+
 ## Notes
 
 - Base image build time: ~5 minutes

@@ -3,6 +3,9 @@ uvicorn==0.27.0
 python-multipart
 requests
 google-cloud-storage
+pydantic==2.5.0
+pydantic-settings==2.1.0
+tenacity==8.2.3
 
 # AI Core
 torch==2.1.2 --index-url https://download.pytorch.org/whl/cu121
@@ -17,3 +20,4 @@ opencv-python-headless==4.9.0.80
 insightface==0.7.3
 onnxruntime-gpu==1.16.3
 peft==0.7.1
+

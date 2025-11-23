@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """
-Clean test plugin for Cloud Run worker style transfer
-
-Reads images from test-images/, uploads to GCS, tests all styles,
-and generates HTML comparison reports.
+Test ONLY viral effects (12 new styles)
+Quick way to test all new features
 """
 import os
 import sys
@@ -87,7 +85,6 @@ def upload_to_gcs(image_path):
     if result.returncode != 0:
         raise Exception(f"Failed to upload to GCS: {result.stderr}")
 
-    # Worker will download using authenticated GCS client, so no need to make public
     return f"https://storage.googleapis.com/{config.TEST_BUCKET}/test-uploads/{filename}"
 
 
@@ -98,20 +95,25 @@ def download_image(url):
     return Image.open(BytesIO(response.content))
 
 
-def test_image_with_styles(image_path, client):
-    """Test single image with all styles"""
+def test_viral_effects(image_path, client):
+    """Test single image with ONLY viral effects"""
     image_name = Path(image_path).stem
     print(f"\n{'='*70}")
-    print(f"Testing: {image_name}")
+    print(f"Testing VIRAL EFFECTS: {image_name}")
     print(f"{'='*70}")
 
     # Upload test image
     print(f"Uploading to GCS...")
     image_url = upload_to_gcs(image_path)
 
+    # Filter to only viral effects
+    viral_styles = [s for s in config.STYLES if s['style'] in config.VIRAL_EFFECTS_ONLY]
+    
+    print(f"\nTesting {len(viral_styles)} viral effects...")
+
     results = []
-    for idx, style_config in enumerate(config.STYLES, 1):
-        print(f"\n[{idx}/{len(config.STYLES)}] Testing {style_config['name']}...")
+    for idx, style_config in enumerate(viral_styles, 1):
+        print(f"\n[{idx}/{len(viral_styles)}] Testing {style_config['name']}...")
 
         try:
             start_time = time.time()
@@ -154,16 +156,18 @@ def generate_html_report(all_results):
     from utils.generate_html_report import create_comparison_html
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_file = os.path.join(config.HTML_DIR, f"test_report_{timestamp}.html")
+    report_file = os.path.join(config.HTML_DIR, f"viral_effects_report_{timestamp}.html")
 
     create_comparison_html(all_results, report_file)
     return report_file
 
 
 def main():
-    """Run all tests"""
+    """Run viral effects tests"""
     print("="*70)
-    print("Jhakaas Worker - Cloud Run Style Transfer Tests")
+    print("Jhakaas Worker - VIRAL EFFECTS Tests")
+    print("="*70)
+    print(f"Testing {len(config.VIRAL_EFFECTS_ONLY)} new viral effects")
     print("="*70)
 
     # Initialize client
@@ -195,7 +199,7 @@ def main():
     # Test each image
     all_results = {}
     for image_path in test_images:
-        results = test_image_with_styles(str(image_path), client)
+        results = test_viral_effects(str(image_path), client)
         all_results[image_path.name] = results
 
     # Generate report

@@ -180,9 +180,16 @@ class ModelManager:
         """Load style-specific LoRA from GCS or HuggingFace"""
         # Map styles to their LoRA repositories
         style_lora_map = {
+            # EXISTING STYLES
             "anime": "ntc-ai/SDXL-LoRA-slider.anime",
             "cartoon": "ntc-ai/SDXL-LoRA-slider.cartoon",
             "pixar": "ntc-ai/SDXL-LoRA-slider.pixar-style",
+            
+            # NEW VIRAL EFFECTS (Downloaded via download_models.py)
+            "clay": "alvdansen/clay-style-lora",
+            "ps2": "artificialguybr/ps1redmond-ps1-game-graphics-lora-for-sdxl",
+            "pixel": "nerijs/pixel-art-xl",
+            "aesthetic": "ntc-ai/SDXL-LoRA-slider.aesthetic",
         }
 
         style_lower = style.lower()
@@ -276,6 +283,7 @@ class ModelManager:
 
         # 3. Build style-aware prompt
         style_prompts = {
+            # EXISTING STYLES
             "anime": "anime art style, vibrant colors, cel shading, manga illustration, Japanese animation",
             "cartoon": "cartoon style, bold outlines, flat colors, animated character design, Western animation",
             "bollywood": "Bollywood movie star, dramatic Indian cinema style, vibrant colors, cinematic lighting",
@@ -285,7 +293,23 @@ class ModelManager:
             "artistic": "artistic portrait, painterly style, creative interpretation",
             "vintage": "vintage photography, classic portrait, timeless aesthetic, film grain",
             "glamour": "glamour photography, elegant portrait, sophisticated lighting",
-            "pixar": "Pixar animation style, 3D character, glossy rendering, animated feature film"
+            "pixar": "Pixar animation style, 3D character, glossy rendering, animated feature film",
+            
+            # NEW VIRAL EFFECTS (LoRA-based)
+            "clay": "claymation style portrait, clay figurine, soft lighting, handcrafted appearance, wallace and gromit style, stop motion animation",
+            "ps2": "ps2 graphics, playstation 2 game character, low poly, early 2000s video game graphics, retro gaming",
+            "pixel": "16-bit pixel art portrait, retro game sprite, dithered shading, pixel perfect, classic video game",
+            "aesthetic": "aesthetic portrait, soft pastel colors, dreamy atmosphere, instagram aesthetic, soft focus, ethereal",
+            
+            # NEW VIRAL EFFECTS (Prompt-only, no LoRA needed)
+            "yearbook": "professional yearbook portrait, studio lighting, formal attire, clean white background, 1990s school photo aesthetic, neutral expression, passport photo style",
+            "kpop": "k-pop idol portrait, korean beauty aesthetic, glass skin, soft lighting, pastel colors, kpop mv style, korean drama cinematography, perfect skin, dewy makeup",
+            "bollywood_poster": "dramatic bollywood movie poster, cinematic lighting, intense expression, vibrant colors, hand-painted poster art style, 1990s hindi film aesthetic, theatrical pose",
+            "y2k": "y2k aesthetic, 2000s digital camera photo, low quality, flash photography, early 2000s party photo, nostalgic, disposable camera feel",
+            "couple_aesthetic": "romantic couple portrait, soft pastel colors, dreamy atmosphere, aesthetic photography, golden hour lighting, instagram couple goals, soft focus",
+            "mermaid": "mermaid portrait, shimmering fish scales, iridescent skin, underwater glow, flowing hair, ethereal beauty, ocean depths, fantasy creature",
+            "sigma": "dramatic black and white portrait, intense gaze, cinematic lighting, powerful presence, sigma male aesthetic, motivational poster style",
+            "thug_life": "cool portrait, confident expression, urban style, street photography, hip hop aesthetic",
         }
 
         # Get style prompt or use the style as-is

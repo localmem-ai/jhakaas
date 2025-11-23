@@ -8,7 +8,10 @@ FROM asia-southeast1-docker.pkg.dev/jhakaas-dev/jhakaas-repo/worker-base:latest
 WORKDIR /app
 
 # Copy only application code (fast!)
-COPY src ./src
+COPY --chown=65534:65534 src ./src
+
+# Switch to non-root user for security
+USER 65534
 
 EXPOSE 8080
 
