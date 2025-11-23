@@ -3,7 +3,7 @@ import shutil
 import torch
 from diffusers import (
     DiffusionPipeline,
-    StableDiffusionXLPipeline,
+    StableDiffusionXLControlNetPipeline,
     AutoencoderKL,
     EulerDiscreteScheduler
 )
@@ -19,7 +19,6 @@ from src.pipelines import StableDiffusionXLInstantIDPipeline
 class ModelManager:
     def __init__(self, bucket_name):
         self.bucket_name = bucket_name
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.pipe = None  # Current active pipeline
         self.current_engine = None # "instantid" or "ip_adapter"
@@ -212,8 +211,8 @@ class ModelManager:
         vae = AutoencoderKL.from_pretrained(vae_path, torch_dtype=torch.float16)
 
         # 4. Initialize Pipeline
-        print("Initializing SDXL Pipeline...")
-        self.pipe = StableDiffusionXLPipeline.from_pretrained(
+        print("Initializing SDXL ControlNet Pipeline...")
+        self.pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
             sdxl_path,
             controlnet=controlnet,
             vae=vae,
@@ -337,30 +336,26 @@ class ModelManager:
         # IP-Adapter uses the face_image as the "ip_adapter_image" prompt
         # ControlNet uses canny_image to keep structure
         
-        # Note: Standard SDXL pipeline doesn't support 'controlnet' arg directly if it wasn't init with it?
-        # Wait, we need StableDiffusionXLControlNetPipeline for ControlNet support.
-        # But we initialized StableDiffusionXLPipeline.
-        # Actually, modern diffusers allows loading controlnet into SDXL pipeline via adapter?
-        # No, we should use StableDiffusionXLControlNetPipeline if we want ControlNet.
-        # Let me fix the load_ip_adapter_engine to use StableDiffusionXLControlNetPipeline.
-        # For now, let's assume the pipeline handles it or I'll fix it in next step.
-        # Actually, I used StableDiffusionXLPipeline in load_ip_adapter_engine which is WRONG for ControlNet.
-        # I need to fix that import too.
-        
-        # Let's proceed with the logic assuming pipeline is correct
-        
-        images = self.pipe(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            ip_adapter_image=face_image, # The face reference
-            image=canny_image,           # The structure reference (ControlNet)
-            controlnet_conditioning_scale=0.5, # Structure strength (lower = more style freedom)
-            num_inference_steps=20,
-            guidance_scale=5.0,
-            cross_attention_kwargs={"scale": float(lora_scale)} if lora_scale > 0 else None,
-        ).images
+        try:
+            images = self.pipe(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                ip_adapter_image=face_image, # The face reference
+                image=canny_image,           # The structure reference (ControlNet)
+                controlnet_conditioning_scale=0.5, # Structure strength (lower = more style freedom)
+                num_inference_steps=20,
+                guidance_scale=5.0,
+                cross_attention_kwargs={"scale": float(lora_scale)} if lora_scale > 0 else None,
+            ).images
 
-        return images[0]
+            if not images:
+                raise RuntimeError("Pipeline returned no images")
+
+            return images[0]
+
+        except Exception as e:
+            print(f"❌ IP-Adapter generation failed: {e}")
+            raise RuntimeError(f"IP-Adapter processing error: {str(e)}")
 
     def process_image(self, face_image_path, prompt, style, engine="instantid"):
         """Process image using selected engine"""
@@ -369,10 +364,12 @@ class ModelManager:
         if engine == "ip_adapter":
             if self.current_engine != "ip_adapter":
                 self.load_ip_adapter_engine()
+                self.current_lora = None # Reset LoRA state for new pipeline
         else:
             if self.current_engine != "instantid":
                 # Reload InstantID (this calls load_models which loads InstantID by default)
                 self.load_models()
+                self.current_lora = None # Reset LoRA state for new pipeline
 
         if not self.pipe:
             raise RuntimeError("Models not loaded")
@@ -435,7 +432,6 @@ class ModelManager:
         # Negative prompt to avoid artifacts while allowing style transformation
         negative_prompt = "monochrome, lowres, bad anatomy, worst quality, low quality, blurry, nsfw, nude"
 
-        print(f"📝 Prompt: {full_prompt}")
         print(f"📝 Prompt: {full_prompt}")
         print(f"🎯 Style: {style}")
         print(f"⚙️  Engine: {engine}")

@@ -1,4 +1,4 @@
-# .dockerignore for worker directory
+    # .dockerignore for worker directory
 # Excludes unnecessary files from Docker build context
 # This speeds up the build by reducing context size
 

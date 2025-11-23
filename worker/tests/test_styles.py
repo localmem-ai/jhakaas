@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import subprocess
+import uuid
 from pathlib import Path
 from datetime import datetime
 
@@ -93,10 +94,28 @@ def upload_to_gcs(image_path):
 
 
 def download_image(url):
-    """Download image from URL"""
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    return Image.open(BytesIO(response.content))
+    """Download image from URL (supports http/https and gs://)"""
+    if url.startswith("gs://"):
+        # Download from GCS using gcloud
+        filename = f"/tmp/{uuid.uuid4()}.jpg"
+        result = subprocess.run(
+            [config.GCLOUD_PATH, 'storage', 'cp', url, filename],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            raise Exception(f"Failed to download from GCS: {result.stderr}")
+        
+        img = Image.open(filename)
+        # Load into memory so we can delete the file
+        img.load()
+        os.remove(filename)
+        return img
+    else:
+        # Download from HTTP
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        return Image.open(BytesIO(response.content))
 
 
 def test_image_with_styles(image_path, client):

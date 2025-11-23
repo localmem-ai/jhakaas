@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Test ONLY viral effects (12 new styles)
-Quick way to test all new features
+Test ONLY viral effects (11 new styles)
+Quick way to test all new features on both engines
 """
 import os
 import sys
 import time
 import subprocess
+import uuid
 from pathlib import Path
 from datetime import datetime
 
@@ -49,12 +50,13 @@ class WorkerAPIClient:
         except Exception as e:
             return {"error": str(e)}
 
-    def generate(self, image_url, prompt, style):
+    def generate(self, image_url, prompt, style, engine="instantid"):
         """Generate styled image"""
         payload = {
             "image_url": image_url,
             "prompt": prompt,
-            "style": style
+            "style": style,
+            "engine": engine
         }
 
         headers = {"Authorization": f"Bearer {self._get_auth_token()}"}
@@ -89,14 +91,32 @@ def upload_to_gcs(image_path):
 
 
 def download_image(url):
-    """Download image from URL"""
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    return Image.open(BytesIO(response.content))
+    """Download image from URL (supports http/https and gs://)"""
+    if url.startswith("gs://"):
+        # Download from GCS using gcloud
+        filename = f"/tmp/{uuid.uuid4()}.jpg"
+        result = subprocess.run(
+            [config.GCLOUD_PATH, 'storage', 'cp', url, filename],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            raise Exception(f"Failed to download from GCS: {result.stderr}")
+
+        img = Image.open(filename)
+        # Load into memory so we can delete the file
+        img.load()
+        os.remove(filename)
+        return img
+    else:
+        # Download from HTTP
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        return Image.open(BytesIO(response.content))
 
 
 def test_viral_effects(image_path, client):
-    """Test single image with ONLY viral effects"""
+    """Test single image with ONLY viral effects on both engines"""
     image_name = Path(image_path).stem
     print(f"\n{'='*70}")
     print(f"Testing VIRAL EFFECTS: {image_name}")
@@ -108,45 +128,56 @@ def test_viral_effects(image_path, client):
 
     # Filter to only viral effects
     viral_styles = [s for s in config.STYLES if s['style'] in config.VIRAL_EFFECTS_ONLY]
-    
-    print(f"\nTesting {len(viral_styles)} viral effects...")
+
+    print(f"\nTesting {len(viral_styles)} viral effects on both engines...")
 
     results = []
+    engines = ["instantid", "ip_adapter"]
+
     for idx, style_config in enumerate(viral_styles, 1):
         print(f"\n[{idx}/{len(viral_styles)}] Testing {style_config['name']}...")
 
-        try:
-            start_time = time.time()
-            result = client.generate(
-                image_url=image_url,
-                prompt=style_config['prompt'],
-                style=style_config['style']
-            )
-            elapsed = time.time() - start_time
+        style_result = {
+            "style": style_config,
+            "engines": {}
+        }
 
-            if result.get("status") == "success":
-                generated_img = download_image(result['output_url'])
+        for engine in engines:
+            print(f"   ⚙️  Engine: {engine}...", end="", flush=True)
+            try:
+                start_time = time.time()
+                result = client.generate(
+                    image_url=image_url,
+                    prompt=style_config['prompt'],
+                    style=style_config['style'],
+                    engine=engine
+                )
+                elapsed = time.time() - start_time
 
-                # Save result
-                output_filename = f"{image_name}_{style_config['style']}.jpg"
-                output_path = os.path.join(config.IMAGES_DIR, output_filename)
-                generated_img.save(output_path, quality=95)
+                if result.get("status") == "success":
+                    generated_img = download_image(result['output_url'])
 
-                print(f"   ✅ Success ({elapsed:.1f}s)")
+                    # Save result
+                    output_filename = f"{image_name}_{style_config['style']}_{engine}.jpg"
+                    output_path = os.path.join(config.IMAGES_DIR, output_filename)
+                    generated_img.save(output_path, quality=95)
 
-                results.append({
-                    "style": style_config,
-                    "image_path": output_path,
-                    "time": elapsed,
-                    "success": True
-                })
-            else:
-                print(f"   ❌ Failed: {result}")
-                results.append({"style": style_config, "success": False})
+                    print(f" ✅ ({elapsed:.1f}s)")
 
-        except Exception as e:
-            print(f"   ❌ Error: {e}")
-            results.append({"style": style_config, "success": False, "error": str(e)})
+                    style_result["engines"][engine] = {
+                        "image_path": output_path,
+                        "time": elapsed,
+                        "success": True
+                    }
+                else:
+                    print(f" ❌ Failed: {result}")
+                    style_result["engines"][engine] = {"success": False, "error": str(result)}
+
+            except Exception as e:
+                print(f" ❌ Error: {e}")
+                style_result["engines"][engine] = {"success": False, "error": str(e)}
+
+        results.append(style_result)
 
     return results
 
@@ -165,9 +196,9 @@ def generate_html_report(all_results):
 def main():
     """Run viral effects tests"""
     print("="*70)
-    print("Jhakaas Worker - VIRAL EFFECTS Tests")
+    print("Jhakaas Worker - VIRAL EFFECTS Tests (Dual Engine)")
     print("="*70)
-    print(f"Testing {len(config.VIRAL_EFFECTS_ONLY)} new viral effects")
+    print(f"Testing {len(config.VIRAL_EFFECTS_ONLY)} viral effects on both engines")
     print("="*70)
 
     # Initialize client
