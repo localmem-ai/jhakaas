@@ -15,10 +15,43 @@ from google.cloud import storage
 BUCKET_NAME = "jhakaas-models-jhakaas-dev"
 PROJECT_ID = "jhakaas-dev"
 
+# Cache the storage client and bucket
+_storage_client = None
+_bucket = None
+
+def get_gcs_bucket():
+    """Get cached GCS bucket instance"""
+    global _storage_client, _bucket
+    if _storage_client is None:
+        _storage_client = storage.Client(project=PROJECT_ID)
+        _bucket = _storage_client.bucket(BUCKET_NAME)
+    return _bucket
+
+def check_gcs_exists(gcs_path):
+    """Check if a file exists in GCS"""
+    bucket = get_gcs_bucket()
+    blob = bucket.blob(gcs_path)
+    exists = blob.exists()
+    if exists:
+        print(f"✓ Already in GCS: {gcs_path}")
+    return exists
+
+def check_gcs_directory_exists(gcs_prefix):
+    """Check if any files exist in GCS with the given prefix"""
+    bucket = get_gcs_bucket()
+    blobs = list(bucket.list_blobs(prefix=gcs_prefix, max_results=1))
+    exists = len(blobs) > 0
+    if exists:
+        print(f"✓ Directory already in GCS: {gcs_prefix}")
+    return exists
+
 def upload_to_gcs(local_path, gcs_path):
-    """Upload a file to GCS"""
-    client = storage.Client(project=PROJECT_ID)
-    bucket = client.bucket(BUCKET_NAME)
+    """Upload a file to GCS (only if it doesn't exist)"""
+    if check_gcs_exists(gcs_path):
+        print(f"⏭️  Skipping upload (already exists): {gcs_path}")
+        return
+
+    bucket = get_gcs_bucket()
     blob = bucket.blob(gcs_path)
 
     # Get file size for progress
@@ -32,8 +65,15 @@ def upload_to_gcs(local_path, gcs_path):
 def download_instantid():
     """Download InstantID ControlNet and IP-Adapter"""
     print("\n" + "="*60)
-    print("📥 Downloading InstantID Models")
+    print("📥 Checking InstantID Models")
     print("="*60)
+
+    # Check if InstantID directory already exists in GCS
+    if check_gcs_directory_exists("instantid/"):
+        print("✓ InstantID models already in GCS, skipping download")
+        return True
+
+    print("📥 Downloading InstantID Models from HuggingFace...")
 
     files_to_download = [
         ("InstantX/InstantID", "ControlNetModel/config.json", "instantid/ControlNetModel/config.json"),
@@ -59,8 +99,15 @@ def download_instantid():
 def download_antelopev2():
     """Download InsightFace AntelopeV2 face analysis model"""
     print("\n" + "="*60)
-    print("📥 Downloading AntelopeV2 Face Model")
+    print("📥 Checking AntelopeV2 Face Model")
     print("="*60)
+
+    # Check if AntelopeV2 directory already exists in GCS
+    if check_gcs_directory_exists("antelopev2/"):
+        print("✓ AntelopeV2 model already in GCS, skipping download")
+        return True
+
+    print("📥 Downloading AntelopeV2 from HuggingFace...")
 
     try:
         print("📥 Downloading from DIAMONIK7777/antelopev2...")
@@ -87,8 +134,15 @@ def download_antelopev2():
 def download_sdxl_base():
     """Download SDXL base model (complete directory structure)"""
     print("\n" + "="*60)
-    print("📥 Downloading SDXL Base Model")
+    print("📥 Checking SDXL Base Model")
     print("="*60)
+
+    # Check if SDXL base directory already exists in GCS
+    if check_gcs_directory_exists("sdxl-base/"):
+        print("✓ SDXL base model already in GCS, skipping download")
+        return True
+
+    print("📥 Downloading SDXL Base from HuggingFace...")
 
     try:
         print("📥 Downloading stabilityai/stable-diffusion-xl-base-1.0...")
@@ -118,8 +172,15 @@ def download_sdxl_base():
 def download_vae_fp16():
     """Download VAE FP16 fix"""
     print("\n" + "="*60)
-    print("📥 Downloading VAE FP16 Fix")
+    print("📥 Checking VAE FP16 Fix")
     print("="*60)
+
+    # Check if VAE FP16 directory already exists in GCS
+    if check_gcs_directory_exists("vae-fp16/"):
+        print("✓ VAE FP16 fix already in GCS, skipping download")
+        return True
+
+    print("📥 Downloading VAE FP16 from HuggingFace...")
 
     try:
         print("📥 Downloading madebyollin/sdxl-vae-fp16-fix...")
@@ -145,39 +206,81 @@ def download_vae_fp16():
         return False
 
 def download_style_loras():
-    """Download community style LoRAs"""
+    """Download community style LoRAs (existing + viral effects)"""
     print("\n" + "="*60)
-    print("📥 Downloading Style LoRAs")
+    print("📥 Checking Style LoRAs")
     print("="*60)
 
-    # These are LoRA sliders from ntc-ai
+    # Existing LoRAs + New Viral Effect LoRAs
     loras = [
+        # EXISTING (Already working)
         ("ntc-ai/SDXL-LoRA-slider.anime", "anime"),
         ("ntc-ai/SDXL-LoRA-slider.cartoon", "cartoon"),
         ("ntc-ai/SDXL-LoRA-slider.pixar-style", "pixar"),
+
+        # NEW VIRAL EFFECTS (College Edition)
+        ("alvdansen/clay-style-lora", "clay"),  # Claymation/Wallace & Gromit
+        ("artificialguybr/ps1redmond-ps1-game-graphics-lora-for-sdxl", "ps2"),  # PS2 Graphics
+        ("nerijs/pixel-art-xl", "pixel"),  # Pixel Art
+
+        # AESTHETIC STYLES (Instagram/TikTok trending)
+        ("ntc-ai/SDXL-LoRA-slider.aesthetic", "aesthetic"),  # General aesthetic
+
+        # OPTIONAL: Add these if repos exist on HuggingFace
+        # ("artificialguybr/BollywoodStyle", "bollywood"),  # Bollywood poster
+        # ("ntc-ai/SDXL-LoRA-slider.korean-aesthetic", "kpop"),  # K-Pop/K-Drama
+        # ("Joeythemonster/mermaid-ariel-lora-for-sdxl", "mermaid"),  # Mermaid
     ]
 
+    downloaded_count = 0
+    failed_count = 0
+    skipped_count = 0
+
     for repo_id, style_name in loras:
+        # Check if this LoRA already exists in GCS
+        if check_gcs_directory_exists(f"style_loras/{style_name}/"):
+            print(f"✓ {style_name} LoRA already in GCS, skipping")
+            skipped_count += 1
+            continue
+
         print(f"\n📥 Downloading {style_name} LoRA from {repo_id}...")
         try:
-            # Download entire repo (slider LoRAs have specific structure)
+            # Download entire repo (LoRAs may have multiple files)
             local_dir = snapshot_download(
                 repo_id=repo_id,
-                cache_dir="./cache"
+                cache_dir="./cache",
+                allow_patterns=["*.safetensors", "*.json", "*.txt"]  # Only download necessary files
             )
 
             # Upload all .safetensors files
+            uploaded = False
             for root, dirs, files in os.walk(local_dir):
                 for file in files:
                     if file.endswith('.safetensors'):
                         file_path = os.path.join(root, file)
                         gcs_path = f"style_loras/{style_name}/{file}"
                         upload_to_gcs(file_path, gcs_path)
+                        uploaded = True
+
+            if uploaded:
+                print(f"✓ {style_name} LoRA downloaded successfully")
+                downloaded_count += 1
+            else:
+                print(f"⚠️  No .safetensors files found for {style_name}")
+                failed_count += 1
+
         except Exception as e:
             print(f"⚠️  Failed to download {style_name} LoRA: {e}")
+            failed_count += 1
             # Continue with other LoRAs
 
-    return True
+    print(f"\n📊 LoRA Download Summary:")
+    print(f"   ✓ Downloaded: {downloaded_count}")
+    print(f"   ⏭️  Skipped (already in GCS): {skipped_count}")
+    print(f"   ⚠️  Failed: {failed_count}")
+    print(f"   📦 Total: {len(loras)}")
+
+    return True  # Don't fail build if some LoRAs fail
 
 def main():
     print("\n" + "="*60)

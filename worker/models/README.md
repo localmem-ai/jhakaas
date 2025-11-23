@@ -18,18 +18,39 @@ Scripts and configurations for downloading and managing AI models.
 
 ### Style LoRAs (Optional)
 Downloaded from Hugging Face:
+
+**Existing Styles:**
 - **Anime**: ntc-ai/SDXL-LoRA-slider.anime
 - **Cartoon**: ntc-ai/SDXL-LoRA-slider.cartoon
 - **Pixar**: ntc-ai/SDXL-LoRA-slider.pixar-style
+
+**Viral Effects (College Edition):**
+- **Clay**: alvdansen/clay-style-lora (Claymation/Wallace & Gromit style)
+- **PS2**: artificialguybr/ps1redmond-ps1-game-graphics-lora-for-sdxl (PS2 game graphics)
+- **Pixel**: nerijs/pixel-art-xl (Pixel art style)
+- **Aesthetic**: ntc-ai/SDXL-LoRA-slider.aesthetic (Instagram/TikTok trending)
 
 ## GPU Best Practices
 
 Following [Google Cloud Run GPU best practices](https://cloud.google.com/run/docs/configuring/jobs/gpu-best-practices):
 
 1. **Pre-download models at build time** - All models are downloaded to GCS using Cloud Build
-2. **Load from GCS mount** - Worker loads models from `/gcs/models/` mount (faster than downloading)
-3. **Powerful build machine** - Use E2_HIGHCPU_32 with 500GB disk for model downloads
-4. **Optimized base image** - Use PyTorch official CUDA runtime image
+2. **Incremental downloads** - Script checks GCS before downloading, skipping existing models
+3. **Load from GCS mount** - Worker loads models from `/gcs/models/` mount (faster than downloading)
+4. **Powerful build machine** - Use E2_HIGHCPU_32 with 500GB disk for model downloads
+5. **Optimized base image** - Use PyTorch official CUDA runtime image
+
+## How It Works
+
+The download script intelligently checks GCS before downloading:
+
+1. **Checks GCS first** - For each model directory (sdxl-base/, vae-fp16/, instantid/, etc.), checks if files already exist
+2. **Skips existing models** - If model directory exists in GCS, skips HuggingFace download entirely
+3. **Downloads only new models** - Only downloads from HuggingFace if model is missing
+4. **Uploads to GCS** - New downloads are uploaded to GCS for future use
+5. **Incremental LoRA downloads** - Each LoRA is checked individually, allowing partial updates
+
+This approach makes builds **much faster** when models are already cached in GCS.
 
 ## Usage
 
