@@ -87,13 +87,22 @@ module "worker_service" {
   memory         = "16Gi"     # 16GB RAM
   gpu_count      = "1"
   launch_stage   = "BETA"
-  min_instances  = 1  # Keep 1 instance warm to avoid cold starts (model download ~2min)
+  min_instances  = 0  # Scale to zero to save costs (cold start ~8-10min)
   max_instances  = 1  # Single instance to avoid zonal redundancy
-  timeout_seconds = 600  # 10 minutes for AI model generation
-  
+  timeout_seconds = 900  # 15 minutes for AI model generation
+
+  # Startup probe for model loading (takes 8-10 minutes)
+  # Total timeout: 5 attempts × 5 minutes = 25 minutes
+  startup_probe_enabled          = true
+  startup_probe_initial_delay    = 0
+  startup_probe_timeout          = 240  # 4 minutes per check
+  startup_probe_period           = 300  # 5 minutes between checks
+  startup_probe_failure_threshold = 5   # 5 attempts before giving up
+
   # Annotations
   additional_annotations = {
     "run.googleapis.com/cpu-throttling" = "false" # Always on for GPU
+    "run.googleapis.com/startup-cpu-boost" = "true" # CPU boost during startup
   }
   
   env_vars = {

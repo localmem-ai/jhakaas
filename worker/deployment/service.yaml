@@ -14,7 +14,7 @@ spec:
     spec:
       serviceAccountName: jhakaas-worker-sa@jhakaas-dev.iam.gserviceaccount.com
       containerConcurrency: 1
-      timeoutSeconds: 300
+      timeoutSeconds: 900
       containers:
       - image: asia-southeast1-docker.pkg.dev/jhakaas-dev/jhakaas-repo/worker:latest
         ports:
@@ -32,7 +32,7 @@ spec:
             port: 8080
           initialDelaySeconds: 0
           timeoutSeconds: 240
-          periodSeconds: 240
-          failureThreshold: 3
+          periodSeconds: 300
+          failureThreshold: 5
       nodeSelector:
         run.googleapis.com/accelerator: nvidia-l4

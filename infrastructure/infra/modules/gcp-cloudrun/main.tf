@@ -86,6 +86,20 @@ resource "google_cloud_run_v2_service" "service" {
         container_port = var.port
       }
 
+      # Startup probe for long-running model loading (AI workloads)
+      dynamic "startup_probe" {
+        for_each = var.startup_probe_enabled ? [1] : []
+        content {
+          initial_delay_seconds = var.startup_probe_initial_delay
+          timeout_seconds       = var.startup_probe_timeout
+          period_seconds        = var.startup_probe_period
+          failure_threshold     = var.startup_probe_failure_threshold
+          tcp_socket {
+            port = var.port
+          }
+        }
+      }
+
       dynamic "volume_mounts" {
         for_each = var.gcs_volumes
         content {

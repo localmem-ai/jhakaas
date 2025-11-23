@@ -116,3 +116,33 @@ variable "ingress" {
   default     = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
   description = "Ingress settings: INGRESS_TRAFFIC_ALL, INGRESS_TRAFFIC_INTERNAL_ONLY, INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 }
+
+variable "startup_probe_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable startup probe for container health checks"
+}
+
+variable "startup_probe_initial_delay" {
+  type        = number
+  default     = 0
+  description = "Startup probe initial delay in seconds"
+}
+
+variable "startup_probe_timeout" {
+  type        = number
+  default     = 240
+  description = "Startup probe timeout per check in seconds"
+}
+
+variable "startup_probe_period" {
+  type        = number
+  default     = 300
+  description = "Startup probe period between checks in seconds"
+}
+
+variable "startup_probe_failure_threshold" {
+  type        = number
+  default     = 5
+  description = "Number of startup probe failures before giving up"
+}
